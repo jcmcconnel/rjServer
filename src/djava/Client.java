@@ -1,4 +1,5 @@
 // A Java program for a Client
+package djava;
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;
@@ -35,6 +36,8 @@ public class Client {
 			System.out.println(i);
 			return;
 		}
+
+      out.println("echoMode");
 
 		// string to read message from input
 		String line = "";
