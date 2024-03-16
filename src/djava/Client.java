@@ -11,6 +11,8 @@ public class Client {
 	private PrintWriter out = null;
 	private Scanner response = null;
 
+   private static String mode;
+
 	// constructor to put ip address and port
 	public Client(String address, int port)
 	{
@@ -37,23 +39,44 @@ public class Client {
 			return;
 		}
 
-      out.println("echoMode");
+      if(mode == "echoMode") {
+         out.println("echoMode");
 
-		// string to read message from input
-		String line = "";
+         // string to read message from input
+         String line = "";
 
-		// keep reading until "Over" is input
-		while (!line.equals("Over")) {
-			try {
-				line = input.readLine();
-            out.println(line);
-            out.flush();
-				System.out.println(response.nextLine());
-			}
-			catch (IOException i) {
-				System.out.println(i);
-			}
-		}
+         // keep reading until "Over" is input
+         while (!line.equals("Over")) {
+            try {
+               line = input.readLine();
+               out.println(line);
+               out.flush();
+               System.out.println(response.nextLine());
+            }
+            catch (IOException i) {
+               System.out.println(i);
+            }
+         }
+      } else {
+         // string to read message from input
+         String line = "GET / HTTP/1.1";
+         out.println(line);
+         out.flush();
+         while (!line.equals("")) {
+            try {
+               line = input.readLine();
+               out.println(line);
+               out.flush();
+            }
+            catch (IOException i) {
+               System.out.println(i);
+            }
+         }
+
+         while (response.hasNextLine()) {
+            System.out.println(response.nextLine());
+         }
+      }
 
 		// close the connection
 		try {
@@ -69,7 +92,16 @@ public class Client {
 
 	public static void main(String args[])
 	{
-		Client client = new Client("127.0.0.1", 5000);
+      Client client;
+      mode="echoMode";
+		if(args.length == 0) {
+         System.out.println("Usage: [OPTIONS] [PORTNUMBER]");
+         System.out.println("   --http-test  Tries to mimic an HTTP request client (Optional)");
+         System.out.println();
+      } else if(args[0].equals("--http-test")){
+         mode="httpMode";
+         client = new Client("127.0.0.1", Integer.parseInt(args[1]));
+      } else client = new Client("127.0.0.1", Integer.parseInt(args[0]));
 	}
 }
 

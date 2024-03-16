@@ -19,7 +19,11 @@ test:
 
 .PHONY: test-client
 test-client:
-	cd build && java djava.Client
+	cd build && java djava.Client 5000
+
+.PHONY: test-raw-client
+test-raw-client:
+	cd build && java djava.Client --http-test 5000
 
 .PHONY: test-help
 test-help:

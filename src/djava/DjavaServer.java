@@ -3,6 +3,8 @@ package djava;
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
+import java.util.HashMap;
+import java.util.Iterator;
 
 public class DjavaServer
 {
@@ -33,6 +35,9 @@ public class DjavaServer
 
    private void clientSession() throws IOException 
    {
+      HashMap<String, String> request = new HashMap<String, String>();
+      String content;
+      Boolean endOfInput = false;
       System.out.println("Waiting for a client ...");
 
       socket = server.accept();
@@ -59,22 +64,28 @@ public class DjavaServer
                }
 
             }
-         } else {
-            while(in.hasNextLine()) {
+         } else if(line.startsWith("GET")) {
+            System.out.println("Accepted client in http mode");
+            request.put("request", line);
+            System.out.println(line+request);
+            while(!line.isEmpty()) {
                line = in.nextLine();
-               if(line.trim().equals("GET / HTTP/1.1") || line.trim().equals("GET / HTTP/1.0")) {
-                  out.println("HTTP/1.1 200 OK");
-                  out.println("Cache-Control: no-cache");
-                  out.println("Server: djava");
-                  out.println("Date: Fri Mar 15 2024");
-                  out.println("Connection: Keep-Alive:");
-                  out.println("Content-Type: text/html");
-                  out.println("");
-                  
-                  out.println("<html><head></head><body><p>Test</p></body></html>");
-                  out.flush();
+               System.out.println(line);
+               if(line.contains(":")){
+                  request.put(line.split(":")[0].trim(), line.split(":")[1].trim());
+                  System.out.println("Stored: "+request.get(line.split(":")[0].trim()));
                }
             }
+            Iterator i = request.keySet().iterator();
+            while(i.hasNext()){
+               String key = (String)i.next();
+               if(key.equals("request")){
+                  out.println("HTTP/1.1 200 OK");
+               } else out.println(key+": "+request.get(key));
+            }
+            
+            out.println("<html><head></head><body><p>Test</p></body></html>");
+            out.flush();
          }
       }
       System.out.println("Closing connection");
