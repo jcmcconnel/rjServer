@@ -157,7 +157,7 @@ public class DjavaServer
             "  <body>\n"+
             "    <p>"+"Index"+"</p>\n"+
             "  </body>\n"+
-            "</html>";
+            "</html>\n";
       } else if(target.equals("/test")){
          return "<!DOCTYPE html>\n"+
             "<html>\n"+
@@ -166,7 +166,7 @@ public class DjavaServer
             "  <body>\n"+
             "    <p>"+"Test"+"</p>\n"+
             "  </body>\n"+
-            "</html>";
+            "</html>\n";
       } else if(target.equals("/test1")){
          return "<!DOCTYPE html>\n"+
             "<html>\n"+
@@ -175,16 +175,16 @@ public class DjavaServer
             "  <body>\n"+
             "    <p>"+"Test1"+"</p>\n"+
             "  </body>\n"+
-            "</html>";
+            "</html>\n";
       } else {
          return "<!DOCTYPE html>\n"+
             "<html>\n"+
             "  <head>\n"+
             "  </head>\n"+
             "  <body>\n"+
-            "    <p>"+"Test"+"</p>\n"+
+            "    <p>"+"There has been an error"+"</p>\n"+
             "  </body>\n"+
-            "</html>";
+            "</html>\n";
       }
    }
 
