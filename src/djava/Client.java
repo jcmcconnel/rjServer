@@ -7,7 +7,7 @@ import java.util.Scanner;
 public class Client {
 	// initialize socket and input output streams
 	private Socket socket = null;
-	private DataInputStream input	 = null;
+	private Scanner input	 = null;
 	private PrintWriter out = null;
 	private Scanner response = null;
 
@@ -22,7 +22,7 @@ public class Client {
 			System.out.println("Connected");
 
 			// takes input from terminal
-			input = new DataInputStream(System.in);
+			input = new Scanner(System.in);
 
 			// sends output to the socket
 			out = new PrintWriter(socket.getOutputStream());
@@ -47,15 +47,10 @@ public class Client {
 
          // keep reading until "Over" is input
          while (!line.equals("Over")) {
-            try {
-               line = input.readLine();
-               out.println(line);
-               out.flush();
-               System.out.println(response.nextLine());
-            }
-            catch (IOException i) {
-               System.out.println(i);
-            }
+            line = input.nextLine();
+            out.println(line);
+            out.flush();
+            System.out.println(response.nextLine());
          }
       } else {
          // string to read message from input
@@ -63,14 +58,9 @@ public class Client {
          out.println(line);
          out.flush();
          while (!line.equals("")) {
-            try {
-               line = input.readLine();
-               out.println(line);
-               out.flush();
-            }
-            catch (IOException i) {
-               System.out.println(i);
-            }
+            line = input.nextLine();
+            out.println(line);
+            out.flush();
          }
 
          while (response.hasNextLine()) {
@@ -79,15 +69,15 @@ public class Client {
       }
 
 		// close the connection
-		try {
-			input.close();
-			out.close();
-         response.close();
-			socket.close();
-		}
-		catch (IOException i) {
-			System.out.println(i);
-		}
+      input.close();
+      out.close();
+      response.close();
+      try{
+         socket.close();
+      }
+      catch (IOException i) {
+         System.out.println(i);
+      }
 	}
 
 	public static void main(String args[])
