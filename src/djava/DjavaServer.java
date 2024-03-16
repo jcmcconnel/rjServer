@@ -14,7 +14,6 @@ public class DjavaServer
 	private Scanner in	 = null;
 	private PrintWriter out = null;
 
-	// constructor with port
 	public DjavaServer()
 	{
 	}
@@ -36,8 +35,15 @@ public class DjavaServer
    private void clientSession() throws IOException 
    {
       HashMap<String, String> request = new HashMap<String, String>();
-      String content;
+      HashMap<String, String> response = new HashMap<String, String>();
       Boolean endOfInput = false;
+
+      response.put("body", "<html><head></head><body><p>Test</p></body></html>");
+
+      response.put("status-line","HTTP/1.0 200 OK");
+      response.put("content-type", "text/html; charset=utf-8");
+      response.put("content-length", String.valueOf(response.get("body").length()));
+      
       System.out.println("Waiting for a client ...");
 
       socket = server.accept();
@@ -66,25 +72,29 @@ public class DjavaServer
             }
          } else if(line.startsWith("GET")) {
             System.out.println("Accepted client in http mode");
-            request.put("request", line);
-            System.out.println(line+request);
+            request.put("request-line", line);
             while(!line.isEmpty()) {
                line = in.nextLine();
                System.out.println(line);
                if(line.contains(":")){
                   request.put(line.split(":")[0].trim(), line.split(":")[1].trim());
-                  System.out.println("Stored: "+request.get(line.split(":")[0].trim()));
                }
             }
-            Iterator i = request.keySet().iterator();
+            if(request.containsKey("content-length")) {
+               request.put("body", "");
+               while(request.get("body").length() < Integer.parseInt(request.get("content-length"))){
+                  request.put("body", request.get("body")+in.nextLine());
+               }
+            }
+            out.println(response.get("status-line"));
+            Iterator i = response.keySet().iterator();
             while(i.hasNext()){
                String key = (String)i.next();
-               if(key.equals("request")){
-                  out.println("HTTP/1.1 200 OK");
-               } else out.println(key+": "+request.get(key));
+               if(!key.equals("status-line") && !key.equals("body"))
+                  out.println(key+": "+response.get(key));
             }
-            
-            out.println("<html><head></head><body><p>Test</p></body></html>");
+            out.println("\n");
+            out.println(response.get("body"));
             out.flush();
          }
       }
