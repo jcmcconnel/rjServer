@@ -16,7 +16,6 @@ public class DjavaServer
    private Scanner in;
    private PrintWriter out;
 
-
    public DjavaServer()
    {
       socket = null;
