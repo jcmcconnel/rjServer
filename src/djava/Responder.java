@@ -1,4 +1,6 @@
 package djava;
+import java.util.HashMap;
+import java.util.List;
 
 public abstract class Responder
 {
@@ -12,12 +14,12 @@ public abstract class Responder
               "  </body>\n"+
               "</html>\n";
 
-   private static String getDefaultErrorBody(){
+   protected static String getDefaultErrorBody(){
       return defaultErrorBody;
    }
 
-   public static setDefaultErrorBody(String body){
-      this.defaultErrorBody = body;
+   public static void setDefaultErrorBody(String body){
+      defaultErrorBody = body;
    }
 
    // Instance 
@@ -27,9 +29,13 @@ public abstract class Responder
 
    private HashMap<String, String> errorResponse;
 
-   public Responder(String endPoint)
+   public Responder(String ep)
    {
-      endPoint = endPoint;
+      endPoint = ep;
+   }
+
+   public boolean equals(String ep){
+      return endPoint.equals(ep);
    }
 
    public HashMap<String, String> getResponse(HashMap<String, String> request){
@@ -55,6 +61,7 @@ public abstract class Responder
       responseBody = getBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
+      return response;
    }
 
    private HashMap<String, String> POSTResponse(HashMap<String, String> request){
@@ -68,19 +75,23 @@ public abstract class Responder
       responseBody = getBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
+      return response;
    }
 
    private HashMap<String, String> PUTResponse(HashMap<String, String> request){
-      return ERRORREsponse(request);
+      return ERRORResponse(request);
    }
 
    protected HashMap<String, String> ERRORResponse(HashMap<String, String> request){
+      HashMap<String, String> response = new HashMap<String, String>();
+      String responseBody = "";
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
       responseBody = getErrorBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
+      return response;
    }
    
    protected abstract String getBody(String target);
@@ -89,7 +100,7 @@ public abstract class Responder
     * Override this method for a custom message
     **/
    protected String getErrorBody(String target){
-      djava.Responder.getDefaultErrorBody();
+      return djava.Responder.getDefaultErrorBody();
    }
 
 }

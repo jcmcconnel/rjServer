@@ -5,7 +5,7 @@ import java.util.Scanner;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Arrays;
-import java.util.List;
+import java.util.ArrayList;
 
 public class DjavaServer
 {
@@ -14,7 +14,7 @@ public class DjavaServer
    private Scanner in;
    private PrintWriter out;
 
-   private List<djava.Responder> responders;
+   private ArrayList<djava.Responder> responders;
    private djava.Responder errorResponder;
    
    public DjavaServer()
@@ -24,7 +24,12 @@ public class DjavaServer
       in = null;
       out = null;
 
-      responders = new List<djava.Responder>();
+      errorResponder = new djava.Responder("/") {
+         protected String getBody(String target){
+            return djava.Responder.getDefaultErrorBody();
+         }
+      };
+      responders = new ArrayList<djava.Responder>();
       responders.add(new djava.Responder("/") {
          protected String getBody(String target){
             return "<!DOCTYPE html>\n"+
@@ -137,8 +142,7 @@ public class DjavaServer
             System.out.println("Accepted client in http mode");
             request.put("request-line", line);
             readInRequest(in, request);
-            getResponder(request.get("request-line").split(" ")[1]).getResponse(request)
-            response = getResponse(request);
+            response = getResponder(request.get("request-line").split(" ")[1]).getResponse(request);
             writeResponse(out, response);
          }
       }
@@ -181,14 +185,16 @@ public class DjavaServer
       out.flush();
    }
 
-   private djava.Responder getResponder(String request-line-url){
-      String endPoint = request-line-url.split("/");
+   private djava.Responder getResponder(String target){
+      String endPoint = target;
+      if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
+      System.out.println("\ngetResponder - endPoint: "+endPoint);
       Iterator i = responders.iterator();
       while(i.hasNext()){
-         djava.Responder r = i.next();
+         djava.Responder r = (djava.Responder)i.next();
          if(r.equals(endPoint)) return r;
       }
-      return responder.get(0);
+      return errorResponder;
    }
 }
 
