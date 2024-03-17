@@ -5,16 +5,21 @@
 SOURCEPATH=src
 COMPILER=javac -sourcepath $(SOURCEPATH) -classpath build -d build
 
-all: 
+.PHONY: all
+all:
 	$(COMPILER) @source_files 
-	cp -r src/pages build
 
 .PHONY: clean
 clean:
 	rm -r build
 
-.PHONY: test
+.PHONY: test-pages
 test:
+	cp -r src/pages build
+
+.PHONY: test-server
+test:
+	cp -r src/pages build
 	cd build && java djava.main 5000
 
 .PHONY: test-client
@@ -28,3 +33,4 @@ test-raw-client:
 .PHONY: test-help
 test-help:
 	cd build && java djava.main
+

@@ -13,7 +13,8 @@ public class PageResponder extends Responder
    protected String getBody(String target)
    {
       String body = "";
-      File ep = new File("pages"+this.getEndPoint());
+      File ep = new File("pages"+this.getEndPoint()+"/index.html");
+      
       try {
          body = Files.readString(ep.toPath());
       }
