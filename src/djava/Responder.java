@@ -1,7 +1,27 @@
 package djava;
 
-public class Responder
+public abstract class Responder
 {
+   // Static 
+   private static String defaultErrorBody = "<!DOCTYPE html>\n"+
+              "<html>\n"+
+              "  <head>\n"+
+              "  </head>\n"+
+              "  <body>\n"+
+              "    <p>"+"There has been an error"+"</p>\n"+
+              "  </body>\n"+
+              "</html>\n";
+
+   private static String getDefaultErrorBody(){
+      return defaultErrorBody;
+   }
+
+   public static setDefaultErrorBody(String body){
+      this.defaultErrorBody = body;
+   }
+
+   // Instance 
+
    private String endPoint;
    private HashMap<String, String> response;
 
@@ -11,7 +31,7 @@ public class Responder
    {
       endPoint = endPoint;
    }
-   
+
    public HashMap<String, String> getResponse(HashMap<String, String> request){
       if(request.get("request-line").startsWith("GET")){
          return GETResponse(request);
@@ -32,7 +52,7 @@ public class Responder
       response.put("Content-Type", "text/html; charset=utf-8");
       response.put("Content-Length", "0");
 
-      responseBody = getResponseFor((String)responders.get(responders.indexOf(request.get("request-line").split(" ")[1])));
+      responseBody = getBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
    }
@@ -45,7 +65,7 @@ public class Responder
       response.put("Content-Type", "text/html; charset=utf-8");
       response.put("Content-Length", "0");
 
-      responseBody = getResponseFor((String)responders.get(responders.indexOf(request.get("request-line").split(" ")[1])));
+      responseBody = getBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
    }
@@ -54,26 +74,23 @@ public class Responder
       return ERRORREsponse(request);
    }
 
-   private HashMap<String, String> ERRORResponse(HashMap<String, String> request){
+   protected HashMap<String, String> ERRORResponse(HashMap<String, String> request){
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getResponseFor("error");
+      responseBody = getErrorBody(request.get("request-line").split(" ")[1]);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
    }
    
-   private String getBody(String target){
-      return "<!DOCTYPE html>\n"+
-         "<html>\n"+
-         "  <head>\n"+
-         "  </head>\n"+
-         "  <body>\n"+
-         "    <p>"+"Index"+"</p>\n"+
-         "  </body>\n"+
-         "</html>\n";
+   protected abstract String getBody(String target);
+
+   /**
+    * Override this method for a custom message
+    **/
+   protected String getErrorBody(String target){
+      djava.Responder.getDefaultErrorBody();
    }
-   
-   
+
 }
 
