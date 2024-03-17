@@ -30,10 +30,67 @@ public class DjavaServer
          }
       };
       responders = new ArrayList<djava.Responder>();
-      responders.add(new djava.PageResponder("/"));
-      responders.add(new djava.PageResponder("/test"));
-      responders.add(new djava.PageResponder("/test1"));
-      responders.add(new djava.PageResponder("/chickenWings"));
+      responders.add(new djava.Responder("/") {
+         protected String getBody(String target){
+            return "<!DOCTYPE html>\n"+
+                    "<html>\n"+
+                    "  <head>\n"+
+                    "  </head>\n"+
+                    "  <body>\n"+
+                    "    <p>"+"Index"+"</p>\n"+
+                    "  </body>\n"+
+                    "</html>\n";
+         }
+      });
+      responders.add(new djava.Responder("/test") {
+         protected String getBody(String target){
+            return "<!DOCTYPE html>\n"+
+                    "<html>\n"+
+                    "  <head>\n"+
+                    "  </head>\n"+
+                    "  <body>\n"+
+                    "    <p>"+"Test"+"</p>\n"+
+                    "  </body>\n"+
+                    "</html>\n";
+         }
+      });
+      responders.add(new djava.Responder("/test1") {
+         protected String getBody(String target){
+            return "<!DOCTYPE html>\n"+
+                    "<html>\n"+
+                    "  <head>\n"+
+                    "  </head>\n"+
+                    "  <body>\n"+
+                    "    <p>"+"Test1"+"</p>\n"+
+                    "  </body>\n"+
+                    "</html>\n";
+         }
+      });
+      responders.add(new djava.Responder("/chickenWings") {
+         protected String getBody(String target){
+         return "<!DOCTYPE html>\n"+
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p id=\"wings\" style=\"font-size: 50px; color: red;\">"+"chicken wings"+"</p>\n"+
+                 " <script>function flashtext(ele,col) { \n"+
+                 " var tmpColCheck = document.getElementById( ele ).style.color; \n"+
+                 " if (tmpColCheck === 'red') { \n"+
+                 " document.getElementById( ele ).style.color = col; \n"+
+                 " } else {"+
+                 " document.getElementById( ele ).style.color = 'red'; \n"+
+                 " }\n"+
+                 " }\n"+
+
+                 "setInterval(function() {\n"+
+                 "flashtext('wings','green');\n"+
+                 "}, 500 );\n"+
+                 "</script>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
+         }
+      });
    }
    
    public void start(int port)

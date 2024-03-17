@@ -7,7 +7,7 @@ COMPILER=javac -sourcepath $(SOURCEPATH) -classpath build -d build
 
 all: 
 	$(COMPILER) @source_files 
-	#cp src/*.* build
+	cp -r src/pages build
 
 .PHONY: clean
 clean:

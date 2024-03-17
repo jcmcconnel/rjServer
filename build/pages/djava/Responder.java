@@ -37,9 +37,6 @@ public abstract class Responder
    public boolean equals(String ep){
       return endPoint.equals(ep);
    }
-   public String getEndPoint(){
-      return this.endPoint;
-   }
 
    public HashMap<String, String> getResponse(HashMap<String, String> request){
       if(request.get("request-line").startsWith("GET")){
