@@ -14,7 +14,7 @@ clean:
 	rm -r build
 
 .PHONY: test-pages
-test:
+test-pages:
 	cp -r src/pages build
 
 .PHONY: test-server

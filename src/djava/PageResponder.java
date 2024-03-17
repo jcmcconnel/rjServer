@@ -14,6 +14,7 @@ public class PageResponder extends Responder
    {
       String body = "";
       File ep = new File("pages"+this.getEndPoint()+"/index.html");
+      System.out.println(ep.getAbsolutePath());
       
       try {
          body = Files.readString(ep.toPath());
