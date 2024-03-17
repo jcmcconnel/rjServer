@@ -10,35 +10,35 @@ import java.util.List;
 
 public class DjavaServer
 {
-	//initialize socket and input stream
-	private Socket socket;
-	private ServerSocket server;
-	private Scanner in;
-	private PrintWriter out;
+   //initialize socket and input stream
+   private Socket socket;
+   private ServerSocket server;
+   private Scanner in;
+   private PrintWriter out;
 
-	public DjavaServer()
-	{
+   public DjavaServer()
+   {
       socket = null;
       server = null;
       in = null;
       out = null;
-	}
+   }
 
-	public void start(int port)
-	{
-		try {
-		// starts server and waits for a connection
-			server = new ServerSocket(port);
-			System.out.println("Server started");
+   public void start(int port)
+   {
+      try {
+         // starts server and waits for a connection
+         server = new ServerSocket(port);
+         System.out.println("Server started");
          while(true) clientSession();
-		}
-		catch(IOException i)
-		{
-			System.out.println(i);
-		}
-	}
+      }
+      catch(IOException i)
+      {
+         System.out.println(i);
+      }
+   }
 
-   private void clientSession() throws IOException 
+   private void clientSession() throws IOException
    {
       HashMap<String, String> request = new HashMap<String, String>();
       HashMap<String, String> response = new HashMap<String, String>();
@@ -106,16 +106,17 @@ public class DjavaServer
    private HashMap<String, String> getResponse(HashMap<String, String> request){
       HashMap<String, String> response = new HashMap<String, String>();
       List responders = Arrays.asList(
-         "/",
-         "/test",
-         "/test1"
+              "/",
+              "/test",
+              "/test1",
+              "/chickenWings"
       );
 
       String responseBody = "";
       if(
-         request.get("request-line").startsWith("GET") && 
-         responders.contains(request.get("request-line").split(" ")[1])
-        ){
+              request.get("request-line").startsWith("GET") &&
+                      responders.contains(request.get("request-line").split(" ")[1])
+      ){
          response.put("status-line","HTTP/1.0 200 OK");
          response.put("Content-Type", "text/html; charset=utf-8");
          response.put("Content-Length", "0");
@@ -123,7 +124,7 @@ public class DjavaServer
          responseBody = getResponseFor((String)responders.get(responders.indexOf(request.get("request-line").split(" ")[1])));
          response.put("Content-Length", String.valueOf(responseBody.length()));
          response.put("body", responseBody);
-         
+
       } else {
          response.put("status-line","HTTP/1.0 404 NOT FOUND");
          response.put("Content-Type", "text/html; charset=utf-8");
@@ -151,40 +152,62 @@ public class DjavaServer
    private String getResponseFor(String target){
       if(target.equals("/")){
          return "<!DOCTYPE html>\n"+
-            "<html>\n"+
-            "  <head>\n"+
-            "  </head>\n"+
-            "  <body>\n"+
-            "    <p>"+"Index"+"</p>\n"+
-            "  </body>\n"+
-            "</html>\n";
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p>"+"Index"+"</p>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
       } else if(target.equals("/test")){
          return "<!DOCTYPE html>\n"+
-            "<html>\n"+
-            "  <head>\n"+
-            "  </head>\n"+
-            "  <body>\n"+
-            "    <p>"+"Test"+"</p>\n"+
-            "  </body>\n"+
-            "</html>\n";
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p>"+"Test"+"</p>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
       } else if(target.equals("/test1")){
          return "<!DOCTYPE html>\n"+
-            "<html>\n"+
-            "  <head>\n"+
-            "  </head>\n"+
-            "  <body>\n"+
-            "    <p>"+"Test1"+"</p>\n"+
-            "  </body>\n"+
-            "</html>\n";
-      } else {
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p>"+"Test1"+"</p>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
+      } else if(target.equals("/chickenWings")) {
          return "<!DOCTYPE html>\n"+
-            "<html>\n"+
-            "  <head>\n"+
-            "  </head>\n"+
-            "  <body>\n"+
-            "    <p>"+"There has been an error"+"</p>\n"+
-            "  </body>\n"+
-            "</html>\n";
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p id=\"wings\" style=\"font-size: 50px; color: red;\">"+"chicken wings"+"</p>\n"+
+                 " <script>function flashtext(ele,col) { \n"+
+                 " var tmpColCheck = document.getElementById( ele ).style.color; \n"+
+                 " if (tmpColCheck === 'red') { \n"+
+                 " document.getElementById( ele ).style.color = col; \n"+
+                 " } else {"+
+                 " document.getElementById( ele ).style.color = 'red'; \n"+
+                 " }\n"+
+                 " }\n"+
+
+                 "setInterval(function() {\n"+
+                 "flashtext('wings','green');\n"+
+                 "}, 500 );\n"+
+                 "</script>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
+      }else {
+         return "<!DOCTYPE html>\n"+
+                 "<html>\n"+
+                 "  <head>\n"+
+                 "  </head>\n"+
+                 "  <body>\n"+
+                 "    <p>"+"There has been an error"+"</p>\n"+
+                 "  </body>\n"+
+                 "</html>\n";
       }
    }
 
