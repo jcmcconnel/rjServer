@@ -19,6 +19,7 @@ public class DjavaServer
    
    public DjavaServer(String pageRoot)
    {
+      File pageRootFile = new File(pageRoot);
       socket = null;
       server = null;
       in = null;
@@ -31,9 +32,9 @@ public class DjavaServer
       };
       responders = new ArrayList<djava.Responder>();
       responders.add(new djava.PageResponder("/", pageRoot));
-      responders.add(new djava.PageResponder("/test", pageRoot));
-      responders.add(new djava.PageResponder("/test1", pageRoot));
-      responders.add(new djava.PageResponder("/chickenWings", pageRoot));
+      for(String s : pageRootFile.list()){
+         responders.add(new djava.PageResponder("/"+s, pageRoot));
+      }
    }
    
    public void start(int port)
@@ -133,7 +134,6 @@ public class DjavaServer
    private djava.Responder getResponder(String target){
       String endPoint = target;
       if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
-      System.out.println("\ngetResponder - endPoint: "+endPoint);
       Iterator i = responders.iterator();
       while(i.hasNext()){
          djava.Responder r = (djava.Responder)i.next();
