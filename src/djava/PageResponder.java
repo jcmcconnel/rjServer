@@ -19,7 +19,7 @@ public class PageResponder extends Responder
       this.root = root;
    }
 
-   protected String getBody(String target)
+   protected String getBody(String target) throws ResponderError
    {
       String body = "";
       String path = "";
@@ -33,7 +33,7 @@ public class PageResponder extends Responder
       
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
-         else body = this.getErrorBody(target);
+         else throw new ResponderError("Path does not exist");
       }
       catch(IOException e) {
          System.out.println(e);
@@ -54,6 +54,7 @@ public class PageResponder extends Responder
             int c = in.read();
             if(c == -1) {
                pathComponents.add(temp);
+               temp = "";
                break;
             }
             if(c == '/') {
@@ -67,6 +68,7 @@ public class PageResponder extends Responder
                break;
             } else temp = temp+(char)c;
          }
+         if(!temp.isEmpty()) pathComponents.add(temp);
       }
       catch(IOException e) {
          System.out.println(e);
@@ -95,6 +97,7 @@ public class PageResponder extends Responder
          int c = in.read();
          if(c == -1) {
             parameters.add(temp);
+            temp = "";
             break;
          }
          if(c == '&' || c == ';'){
@@ -102,6 +105,7 @@ public class PageResponder extends Responder
             temp = "";
          } else temp = temp + (char)c;
       }
+      if(!temp.isEmpty()) parameters.add(temp);
       return parameters;
    }
 }

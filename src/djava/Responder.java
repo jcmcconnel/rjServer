@@ -42,18 +42,22 @@ public abstract class Responder
    }
 
    public HashMap<String, String> getResponse(HashMap<String, String> request){
-      if(request.get("request-line").startsWith("GET")){
-         return GETResponse(request);
-      } else if(request.get("request-line").startsWith("POST")) {
-         return POSTResponse(request);
-      } else if(request.get("request-line").startsWith("PUT")) {
-         return PUTResponse(request);
-      }else {
-         return ERRORResponse(request);
+      try{
+         if(request.get("request-line").startsWith("GET")){
+            return GETResponse(request);
+         } else if(request.get("request-line").startsWith("POST")) {
+            return POSTResponse(request);
+         } else if(request.get("request-line").startsWith("PUT")) {
+            return PUTResponse(request);
+         }
       }
+      catch(ResponderError e){
+         ERRORResponse(request);
+      }
+      return ERRORResponse(request);
    }
 
-   private HashMap<String, String> GETResponse(HashMap<String, String> request){
+   private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderError {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
 
@@ -67,7 +71,7 @@ public abstract class Responder
       return response;
    }
 
-   private HashMap<String, String> POSTResponse(HashMap<String, String> request){
+   private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderError {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
 
@@ -81,7 +85,7 @@ public abstract class Responder
       return response;
    }
 
-   private HashMap<String, String> PUTResponse(HashMap<String, String> request){
+   private HashMap<String, String> PUTResponse(HashMap<String, String> request) throws ResponderError {
       return ERRORResponse(request);
    }
 
@@ -97,7 +101,7 @@ public abstract class Responder
       return response;
    }
    
-   protected abstract String getBody(String target);
+   protected abstract String getBody(String target) throws ResponderError;
 
    /**
     * Override this method for a custom message
