@@ -17,7 +17,7 @@ public class DjavaServer
    private ArrayList<djava.Responder> responders;
    private djava.Responder errorResponder;
    
-   public DjavaServer()
+   public DjavaServer(String pageRoot)
    {
       socket = null;
       server = null;
@@ -30,10 +30,10 @@ public class DjavaServer
          }
       };
       responders = new ArrayList<djava.Responder>();
-      responders.add(new djava.PageResponder("/"));
-      responders.add(new djava.PageResponder("/test"));
-      responders.add(new djava.PageResponder("/test1"));
-      responders.add(new djava.PageResponder("/chickenWings"));
+      responders.add(new djava.PageResponder("/", pageRoot));
+      responders.add(new djava.PageResponder("/test", pageRoot));
+      responders.add(new djava.PageResponder("/test1", pageRoot));
+      responders.add(new djava.PageResponder("/chickenWings", pageRoot));
    }
    
    public void start(int port)

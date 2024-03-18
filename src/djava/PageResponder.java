@@ -5,16 +5,18 @@ import java.io.IOException;
 
 public class PageResponder extends Responder
 {
-   public PageResponder(String ep)
+   String root;
+
+   public PageResponder(String ep, String root)
    {
       super(ep);
+      this.root = root;
    }
 
    protected String getBody(String target)
    {
       String body = "";
-      File ep = new File("pages"+this.getEndPoint()+"/index.html");
-      System.out.println(ep.getAbsolutePath());
+      File ep = new File(root+this.getEndPoint()+"/index.html");
       
       try {
          body = Files.readString(ep.toPath());

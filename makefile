@@ -13,14 +13,13 @@ all:
 clean:
 	rm -r build
 
-.PHONY: test-pages
-test-pages:
+.PHONY: copy-pages
+copy-pages:
 	cp -r src/pages build
 
 .PHONY: test-server
-test:
-	cp -r src/pages build
-	cd build && java djava.main 5000
+test-server:
+	cd build && java djava.main ./pages 5000
 
 .PHONY: test-client
 test-client:
