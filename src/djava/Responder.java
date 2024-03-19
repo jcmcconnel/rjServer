@@ -1,6 +1,9 @@
 package djava;
 import java.util.HashMap;
 import java.util.List;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.io.StringReader;
 
 public abstract class Responder
 {
@@ -29,6 +32,12 @@ public abstract class Responder
 
    private HashMap<String, String> errorResponse;
 
+   protected HashMap<String, String> request;
+
+   protected String path;
+   protected ArrayList<String> currentParameters;
+   protected String currentHashId;
+
    public Responder(String ep)
    {
       endPoint = ep;
@@ -42,6 +51,7 @@ public abstract class Responder
    }
 
    public HashMap<String, String> getResponse(HashMap<String, String> request){
+      this.request = request;
       try{
          if(request.get("request-line").startsWith("GET")){
             return GETResponse(request);
@@ -60,12 +70,15 @@ public abstract class Responder
    private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderError {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
+      String target = request.get("request-line").split(" ")[1];
+
+      this.path = parsePath(target);
 
       response.put("status-line","HTTP/1.0 200 OK");
       response.put("Content-Type", "text/html; charset=utf-8");
       response.put("Content-Length", "0");
 
-      responseBody = getBody(request.get("request-line").split(" ")[1]);
+      responseBody = getBody(target);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
       return response;
@@ -74,12 +87,15 @@ public abstract class Responder
    private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderError {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
+      String target = request.get("request-line").split(" ")[1];
+
+      this.path = parsePath(target);
 
       response.put("status-line","HTTP/1.0 200 OK");
       response.put("Content-Type", "text/html; charset=utf-8");
       response.put("Content-Length", "0");
 
-      responseBody = getBody(request.get("request-line").split(" ")[1]);
+      responseBody = getBody(target);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
       return response;
@@ -92,13 +108,85 @@ public abstract class Responder
    protected HashMap<String, String> ERRORResponse(HashMap<String, String> request){
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
+      String target = request.get("request-line").split(" ")[1];
+
+      this.path = parsePath(target);
+
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getErrorBody(request.get("request-line").split(" ")[1]);
+      responseBody = getErrorBody(target);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
       return response;
+   }
+
+   protected String parsePath(String target){
+      ArrayList<String> pathComponents = new ArrayList<String>();
+
+      StringReader in = new StringReader(target);
+
+      try{
+         if(target.startsWith(this.getEndPoint())) in.skip(this.getEndPoint().length());
+
+         String temp = "";
+         while(in.ready()) {
+            int c = in.read();
+            if(c == -1) {
+               pathComponents.add(temp);
+               temp = "";
+               break;
+            }
+            if(c == '/') {
+               pathComponents.add(temp);
+               temp = "";
+            } else if(c == '#') {
+               currentHashId = parseIdentifier(in);
+               break;
+            } else if(c == '?') {
+               currentParameters = parseParameters(in);
+               break;
+            } else temp = temp+(char)c;
+         }
+         if(!temp.isEmpty()) pathComponents.add(temp);
+      }
+      catch(IOException e) {
+         System.out.println(e);
+         return "";
+      }
+      return String.join("/", pathComponents);
+   }
+
+   protected String parseIdentifier(StringReader in) throws IOException {
+      String returnValue = "";
+      while(in.ready()){
+         int c = in.read();
+         if(c == -1) break;
+         if(c == '?'){
+            currentParameters = parseParameters(in);
+            break;
+         } else returnValue = returnValue + (char)c;
+      }
+      return returnValue;
+   }
+
+   protected ArrayList<String> parseParameters(StringReader in) throws IOException {
+      ArrayList<String> parameters = new ArrayList<String>();
+      String temp = "";
+      while(in.ready()){
+         int c = in.read();
+         if(c == -1) {
+            parameters.add(temp);
+            temp = "";
+            break;
+         }
+         if(c == '&' || c == ';'){
+            parameters.add(temp);
+            temp = "";
+         } else temp = temp + (char)c;
+      }
+      if(!temp.isEmpty()) parameters.add(temp);
+      return parameters;
    }
    
    protected abstract String getBody(String target) throws ResponderError;

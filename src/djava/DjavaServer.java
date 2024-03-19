@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.util.ArrayList;
+import java.io.IOException;
 
 public class DjavaServer
 {
@@ -35,12 +36,11 @@ public class DjavaServer
       for(String s : pageRootFile.list()){
          responders.add(new djava.PageResponder("/"+s, pageRoot));
       }
+      responders.add(new djava.FormResponder("/formtest"));
    }
    
    public void start(int port)
    {
-      // Get responders
-      
       try {
          // starts server and waits for a connection
          server = new ServerSocket(port);
@@ -64,6 +64,7 @@ public class DjavaServer
       System.out.println("Client accepted");
    
       // takes input from the client socket
+
       in = new Scanner(socket.getInputStream());
    
       out = new PrintWriter(socket.getOutputStream());
@@ -100,7 +101,7 @@ public class DjavaServer
    }
    
    private void readInRequest(Scanner in, HashMap<String, String> request){
-      Boolean endOfInput = false;
+      InputStream is;
       String line = request.get("request-line");
       System.out.println(line);
       while(!line.isEmpty()) {
@@ -108,13 +109,20 @@ public class DjavaServer
          System.out.println(line);
          if(line.contains(":")){
             request.put(line.split(":")[0].trim().toLowerCase(), line.split(":")[1].trim());
-         }
+         } 
       }
       if(request.containsKey("content-length")) {
-         request.put("body", "");
-         while(request.get("body").length() < Integer.parseInt(request.get("content-length"))){
-            request.put("body", request.get("body")+in.nextLine());
+         int numOfLines = 1;
+         StringBuilder s = new StringBuilder();
+         line = in.nextLine();
+         s.append(line+"\n");
+         while(s.toString().length() < Integer.parseInt(request.get("content-length"))-numOfLines) {
+            line = in.nextLine();
+            s.append(line+"\n");
+            numOfLines++;
          }
+         System.out.println(s.toString());
+         request.put("body", s.toString());
       }
    }
    
