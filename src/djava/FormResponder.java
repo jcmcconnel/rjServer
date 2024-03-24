@@ -11,41 +11,45 @@ public class FormResponder extends Responder
 {
 
    private HashMap<String, String> localVariables;
+   private AbstractXHTMLBasedFile template;
 
-   public FormResponder(String ep)
+   public FormResponder(String ep, String pageRoot)
    {
       super(ep);
+      template = new AbstractXHTMLBasedFile(pageRoot+this.getEndPoint()+"index.djava"){
+         protected String buildBody(){
+            StringBuilder s = new StringBuilder();
+            s.append("<body>");
+            System.out.println(this.getDataElement("form").toString());
+            s.append(this.getDataElement("form").toString());
+            if(request.containsKey("body")) s.append("<p>Body: "+request.get("body")+"</p>");
+            if(request.containsKey("body")) s.append(parseRequestBody());
+            s.append("</body>");
+            return s.toString();
+         }
+         protected String buildHead(){
+            StringBuilder s = new StringBuilder();
+            s.append("<head>");
+            s.append(this.getDataElement("title").toString());
+            s.append("</head>");
+            return s.toString();
+         }
+         protected void prepforSave(){}
+         protected void cleanUpAfterSave(){}
+         protected String getMacroText(String macro){return "";}
+      };
+      template.addToken("form");
+      try{
+         template.load();
+      }catch(IOException e){
+          System.out.println(e.toString());
+      }
       localVariables = new HashMap<String, String>();
    }
 
    protected String getBody(String target) throws ResponderError
    {
-      StringBuilder body = new StringBuilder();
-      body.append("<!DOCTYPE html>\n");
-      body.append("<html>\n");
-      body.append("  <head>\n");
-      body.append("  </head>\n");
-      body.append("  <body>\n");
-      body.append("    <form action='' method='post' enctype='text/plain' class='form-example'>\n");
-      body.append("      <div class='form-example'>\n");
-      body.append("        <label for='name'>Enter your name: </label>\n");
-      body.append("        <input type='text' name='name' id='name' required />\n");
-      body.append("      </div>\n");
-      body.append("      <div class='form-example'>\n");
-      body.append("        <label for='email'>Enter some text</label>\n");
-      body.append("        <textarea id='body' name='body' rows='10' cols'33' required >{num:\"5+3\" para:\"$num\"}</textarea>\n");
-      body.append("      </div>\n");
-      body.append("      <div class='form-example'>\n");
-      body.append("        <input type='submit' value='Subscribe!' />\n");
-      body.append("      </div>\n");
-      body.append("    </form>\n");
-      if(request.containsKey("body")) body.append("<p>Body: "+request.get("body")+"</p>");
-      if(request.containsKey("body")) body.append(parseRequestBody());
-      body.append("  </body>\n");
-      body.append("</html>\n");
-      
-      body.append("\n");
-      return body.toString();
+      return template.toString();
    }
 
     protected String parseRequestBody(){

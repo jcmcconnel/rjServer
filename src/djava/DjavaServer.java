@@ -32,11 +32,10 @@ public class DjavaServer
          }
       };
       responders = new ArrayList<djava.Responder>();
-      responders.add(new djava.PageResponder("/", pageRoot));
+      responders.add(new djava.FormResponder("/", pageRoot));
       for(String s : pageRootFile.list()){
          responders.add(new djava.PageResponder("/"+s, pageRoot));
       }
-      responders.add(new djava.FormResponder("/formtest"));
    }
    
    public void start(int port)
