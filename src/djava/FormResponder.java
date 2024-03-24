@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.text.DecimalFormat;
 
 public class FormResponder extends Responder
 {
@@ -20,7 +21,6 @@ public class FormResponder extends Responder
          protected String buildBody(){
             StringBuilder s = new StringBuilder();
             s.append("<body>");
-            System.out.println(this.getDataElement("form").toString());
             s.append(this.getDataElement("form").toString());
             if(request.containsKey("body")) s.append("<p>Body: "+request.get("body")+"</p>");
             if(request.containsKey("body")) s.append(parseRequestBody());
@@ -97,15 +97,15 @@ public class FormResponder extends Responder
       Scanner in = new Scanner(value);
       StringBuilder output = new StringBuilder();
       int num = 0;
-      System.out.println("found key:"+key);
-      System.out.println("found value:"+value);
-      if(key.equals("num:")){
-         while(in.hasNextInt()) {
-            int i = in.nextInt();
-            System.out.println("found int: "+Integer.toString(i));
-            num += i;
-         }
-         localVariables.put("num", Integer.toString(num));
+      if(key.equals("factor:")){
+         if(localVariables.containsKey("num")) {
+            localVariables.put("num", convert(localVariables.get("num"), value, false));
+         } else localVariables.put("factor", value);
+         return "";
+      }else if(key.equals("num:")){
+         if(localVariables.containsKey("factor")) {
+            localVariables.put("num", convert(value, localVariables.get("factor"), false));
+         } else localVariables.put("num", value);
          return "";
       } else if(key.equals("para:")){
          output.append("<p>");
@@ -120,6 +120,105 @@ public class FormResponder extends Responder
       }
       return "";
     }
+
+
+    //The following 3 were originally written for recipejar
+   /**
+    *
+    * @param f
+    * @return
+    */
+   public static String decimalToFraction(float f) {
+      int wholepart = (int) f;
+      f = f - wholepart;
+      String output = "";
+      if(Math.abs(wholepart) > 0) output = Integer.toString(wholepart)+" ";
+      if(f == 0.75) output += "3/4";
+      if(f == 0.5) output += "1/2";
+      if(f > 0.3 && f < 0.334) output += "1/3";
+      if(f == 0.25) output += "1/4";
+      if(f == 0.2) output += "1/5";
+      if(f == 0.125) output += "1/8";
+      if(f == 0.0625) output += "1/16";
+      if(!output.isEmpty()) return output;
+      return new DecimalFormat("0.##").format(f);
+   }
+
+
+   private static float parseMixedNumber(String qty){
+      if (!qty.trim().contains(" ") && qty.contains("/")) {
+         //A fraction; if does contain a " " then it's a mixed number
+         try {
+            float num = Float.parseFloat(qty.substring(0, qty.indexOf("/")));
+            float denom = Float.parseFloat(qty.substring(qty.indexOf("/") + 1));
+            return num / denom;
+         } catch (NumberFormatException numberFException) {
+            return -1;//cannot convert
+         }
+      } else if (qty.trim().contains(" ") && qty.contains("/")) {
+         //a mixed number
+         try {
+            float whole = Float.parseFloat(qty.substring(0, qty.indexOf(" ")));
+            float num = Float.parseFloat(qty.substring(qty.indexOf(" ") + 1, qty.indexOf("/")));
+            float denom = Float.parseFloat(qty.substring(qty.indexOf("/") + 1));
+            return whole + num / denom;
+         } catch (NumberFormatException numberFException) {
+            return -1;//cannot convert
+         }
+      }
+      return Float.parseFloat(qty);
+   }
+
+   /**
+    * Parses the number out of the string given by qty,
+    * and processes it with the function defined by factor,
+    * then returns the result as a string.
+    * @param qty
+    * @param factor
+    * @param outputFraction
+    * @return
+    */
+   private static String convert(String qty, String factor, boolean outputFraction) {
+      float x = 0;
+      if (qty.isEmpty()) {
+         x = 0;
+      } else {//Parse out the value of qty
+         if (qty.trim().contains("-")) {
+            //A range
+            return (convert(qty.substring(0, qty.indexOf("-")).trim(), factor, outputFraction) + "-"
+                    + convert(qty.substring(qty.indexOf("-") + 1).trim(), factor, outputFraction));
+         }
+         try {
+            x = parseMixedNumber(qty);
+         } catch (NumberFormatException numberFormatException) {
+            return qty;//cannot convert
+         }
+      }
+      try {
+         float result;
+         //Plus or minus indicates a function.
+         if (factor.contains("+")) {
+            String[] formula = factor.split("\\+");
+            float m = parseMixedNumber(formula[0]);
+            float b = parseMixedNumber(formula[1]);
+            result = m * x + b;
+         } else if (factor.contains("-")) {
+            String[] formula = factor.split("-");
+            float m = parseMixedNumber(formula[0]);
+            float b = parseMixedNumber(formula[1]);
+            result = m * x - b;
+         } else {
+            result = Float.parseFloat(factor) * x;
+         }
+         if (outputFraction) {
+            return decimalToFraction(result);
+         } else {
+            return (new DecimalFormat("0.##")).format(result);
+         }
+      } catch (NumberFormatException numberFormatException) {
+         return qty;//Cannot parse number
+      }
+   }
    
 }
 
