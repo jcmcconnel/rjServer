@@ -19,7 +19,7 @@ copy-pages:
 
 .PHONY: test-server
 test-server:
-	cd build && java djava.main ./pages 5000
+	cp -r src/pages build && cd build && java djava.main ./pages 5000
 
 .PHONY: test-client
 test-client:

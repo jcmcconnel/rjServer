@@ -1,9 +1,18 @@
 DJava
 =====
-So, basically building an application server.  The DjavaServer class opens a socket.  Nginx can be configured to proxy that localhost port.  
-Responder abstract class can be extended to serve content from any source desired. 
+So, basically I am building an application server.
 
-PageResponder is a simple extension of the Responder class to server html files from from a given root directory;
+Just to be clear, this is a manual implementation of the HTTP protocol.  That is to say, if you are looking for something shiny, I understand Java has an HttpServer package you can use.  In the same spirit, you may find other things manually implemented as the primary intent of this project is as an educational exercise.
+
+The server has been tested behind an Nginx proxy, and seems to be responding stably.  
+
+Primary Features
+----------------
+  - The `DjavaServer` class opens a socket.
+  - `Responder` abstract class can be extended to serve content from any source desired. 
+    - `PageResponder`s serve simple html from a configured root directory.
+    - The goal with `FormResponder` is to eventually demonstrate input parsing and return dynamically generated content.  I.e. `{num: "5+3", para: "$num"}` might return `<p>8</p>`, for example.  
+
 
 
 Current Status
@@ -11,6 +20,8 @@ Current Status
   - Great little echo bot, when used locally.  
   - Proxied interaction behind Nginx has been demonstrated.  
   - HTTP request implementation is in progress
+    - GET requests are working just fine.
+    - POST requests are being read in correctly, and responses are being returned.
 
 Updates
 ======

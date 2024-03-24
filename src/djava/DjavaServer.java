@@ -12,7 +12,7 @@ public class DjavaServer
 {
    private Socket socket;
    private ServerSocket server;
-   private Scanner in;
+   private InputStream in;
    private PrintWriter out;
 
    private ArrayList<djava.Responder> responders;
@@ -65,20 +65,23 @@ public class DjavaServer
    
       // takes input from the client socket
 
-      in = new Scanner(socket.getInputStream());
+      in = socket.getInputStream();
    
       out = new PrintWriter(socket.getOutputStream());
    
-      String line = "";
+      String line = this.readLine(in);
+      System.out.println(line);
    
-      if(in.hasNextLine()) {
-         line = in.nextLine();
+      request.put("request-line", line);
+
+      if(!line.trim().equals("")) {
+         line = this.readLine(in);
          if(line.equals("echoMode")){
             // reads message from client until "Over" is sent
             while (!line.equals("Over"))
             {
-               if(in.hasNextLine()) {
-                  line = in.nextLine();
+               if(in.available() > 0) {
+                  line = this.readLine(in);
                   System.out.println(line);
                   out.println("This is what I received: "+line);
                   out.flush();
@@ -87,7 +90,6 @@ public class DjavaServer
             }
          } else {
             System.out.println("Accepted client in http mode");
-            request.put("request-line", line);
             readInRequest(in, request);
             response = getResponder(request.get("request-line").split(" ")[1]).getResponse(request);
             writeResponse(out, response);
@@ -96,30 +98,34 @@ public class DjavaServer
       System.out.println("Closing connection");
    
       // close connection
-      socket.close();
       in.close();
+      socket.close();
+   }
+
+   private String readLine(InputStream in) throws IOException {
+      int c = in.read();
+      StringBuilder s = new StringBuilder();
+      while(c != -1 && c != '\n' && in.available() > 0){
+          if(c != '\r') s.append((char)c); 
+         c = in.read();
+      }
+      return s.toString();
    }
    
-   private void readInRequest(Scanner in, HashMap<String, String> request){
-      InputStream is;
+   private void readInRequest(InputStream in, HashMap<String, String> request) throws IOException {
       String line = request.get("request-line");
       System.out.println(line);
       while(!line.isEmpty()) {
-         line = in.nextLine();
+         line = this.readLine(in);
          System.out.println(line);
          if(line.contains(":")){
             request.put(line.split(":")[0].trim().toLowerCase(), line.split(":")[1].trim());
          } 
       }
       if(request.containsKey("content-length")) {
-         int numOfLines = 1;
          StringBuilder s = new StringBuilder();
-         line = in.nextLine();
-         s.append(line+"\n");
-         while(s.toString().length() < Integer.parseInt(request.get("content-length"))-numOfLines) {
-            line = in.nextLine();
-            s.append(line+"\n");
-            numOfLines++;
+         while(s.toString().length() < Integer.parseInt(request.get("content-length"))) {
+            s.append((char)in.read());
          }
          System.out.println(s.toString());
          request.put("body", s.toString());
