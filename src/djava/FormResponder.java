@@ -66,7 +66,8 @@ public class FormResponder extends Responder
          StringBuilder currentKey = new StringBuilder();
          StringBuilder currentValue = new StringBuilder();
          boolean inQuote = false;
-         while(braceStack > 0 && temp.length() < end) {
+         while(braceStack > 0 && temp.length() > end) {
+             System.out.println("parseing braces");
             if(temp.charAt(end) == '}') {
                braceStack--;
                end++;
