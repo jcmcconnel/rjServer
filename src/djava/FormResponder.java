@@ -67,7 +67,6 @@ public class FormResponder extends Responder
          StringBuilder currentValue = new StringBuilder();
          boolean inQuote = false;
          while(braceStack > 0 && temp.length() > end) {
-             System.out.println("parseing braces");
             if(temp.charAt(end) == '}') {
                braceStack--;
                end++;
@@ -198,12 +197,12 @@ public class FormResponder extends Responder
       try {
          float result;
          //Plus or minus indicates a function.
-         if (factor.contains("+")) {
+         if (factor.contains("+") && factor.split("\\+").length == 2) {
             String[] formula = factor.split("\\+");
             float m = parseMixedNumber(formula[0]);
             float b = parseMixedNumber(formula[1]);
             result = m * x + b;
-         } else if (factor.contains("-")) {
+         } else if (factor.contains("-") && factor.split("-").length == 2) {
             String[] formula = factor.split("-");
             float m = parseMixedNumber(formula[0]);
             float b = parseMixedNumber(formula[1]);
