@@ -3,7 +3,10 @@
 
 
 SOURCEPATH=src
-COMPILER=javac -sourcepath $(SOURCEPATH) -classpath build -d build
+CLASSPATH=build
+COMPILER=javac -sourcepath $(SOURCEPATH) -classpath $(CLASSPATH) -d $(CLASSPATH)
+
+build/responder/ApplicationResponder.class: src/responder/ApplicationResponder.java
 
 .PHONY: all
 all:

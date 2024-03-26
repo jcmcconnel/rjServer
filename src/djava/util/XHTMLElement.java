@@ -7,7 +7,7 @@
  * Originally created for recipejar
  */
 //package recipejar.lib;
-package djava;
+package djava.util;
 
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -22,14 +22,14 @@ import java.util.Iterator;
  * The Elements retained by the AbstractXHTMLFile also make it easy to
  * recreate the file from scratch as happens in the save function.
  */
-public class Element {
+public class XHTMLElement{
 
    private String name;
    private HashMap<String, String> attributes;
    private String content = "";
    private boolean selfclosing = false;
 
-   public Element(String s) {
+   public XHTMLElement(String s) {
       name = s;
       if(name.toLowerCase().equals("meta")){
          selfclosing = true;
@@ -37,7 +37,7 @@ public class Element {
       attributes = new HashMap<String, String>();
    }
 
-   public Element(String s, HashMap<String, String> attr) {
+   public XHTMLElement(String s, HashMap<String, String> attr) {
       name = s;
       if(name.toLowerCase().equals("meta")){
          selfclosing = true;
@@ -50,7 +50,7 @@ public class Element {
     * @param s
     * @return
     */
-   public static Element parse(String s) {
+   public static XHTMLElement parse(String s) {
       if (s.length() == 0) {
          return null;
       }
@@ -66,7 +66,7 @@ public class Element {
             name = name + c;
          }
       }
-      Element e = new Element(name);
+      XHTMLElement e = new XHTMLElement(name);
 
       String rot = s.substring(index).trim();//rest of tag
       //For each attribute.
@@ -171,7 +171,7 @@ public class Element {
       return attributes.containsKey(key);
    }
 
-   public boolean equals(Element e) {
+   public boolean equals(XHTMLElement e) {
       if (toString().equals(e.toString())) {
          return true;
       } else {
@@ -180,8 +180,8 @@ public class Element {
    }
 
    @Override
-   public Element clone() {
-      Element e = new Element(this.name);
+   public XHTMLElement clone() {
+      XHTMLElement e = new XHTMLElement(this.name);
       Iterator<String> i = this.attributes.keySet().iterator();
       while (i.hasNext()) {
          String s = i.next();

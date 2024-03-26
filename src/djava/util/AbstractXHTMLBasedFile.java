@@ -9,7 +9,7 @@
  * Originally created for recipejar
  */
 //package recipejar.lib;
-package djava;
+package djava.util;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Stack;
 import java.util.ArrayList;
+import djava.util.XHTMLElement;
 
 /**
  * Defines general functions that are used by the recipejar.recipe.RecipeFile
@@ -87,8 +88,8 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public void setMetaData(String name, String content) {
       if (getMetaData(name) == null) {
-         Element e;
-         e = new Element("meta");
+         XHTMLElement e;
+         e = new XHTMLElement("meta");
          e.setAttribute("name", name);
          e.setAttribute("content", content);
          MetaData.add(e);
@@ -108,7 +109,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param name The name attribute of the element required.
     * @return
     */
-   public Element getMetaElement(String name) {
+   public XHTMLElement getMetaElement(String name) {
       for (int i = 0; i < MetaData.size(); i++) {
          if (MetaData.get(i).hasAttribute("name") && MetaData.get(i).getAttribute("name").equals(name)) {
             return MetaData.get(i);
@@ -123,7 +124,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public String getTitle() {
       if (!DataElements.containsKey("title")) {
-         this.DataElements.put("title", new Element("title"));
+         this.DataElements.put("title", new XHTMLElement("title"));
       }
       return this.DataElements.get("title").getContent();
    }
@@ -135,7 +136,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public void setTitle(String newTitle) {
       if (!DataElements.containsKey("title")) {
-         Element e = new Element("title");
+         XHTMLElement e = new XHTMLElement("title");
          e.setContent(newTitle);
          this.DataElements.put("title", e);
       }
@@ -148,7 +149,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public String getStyle() {
       if (!DataElements.containsKey("style")) {
-         Element e = new Element("style");
+         XHTMLElement e = new XHTMLElement("style");
          e.setAttribute("type", "text/css");
          this.DataElements.put("style", e);
       }
@@ -162,7 +163,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public void setStyle(String newStyle) {
       if (!DataElements.containsKey("style")) {
-         Element e = new Element("style");
+         XHTMLElement e = new XHTMLElement("style");
          e.setAttribute("type", "text/css");
          e.setContent(newStyle);
          this.DataElements.put("style", e);
@@ -178,21 +179,21 @@ public abstract class AbstractXHTMLBasedFile extends File {
     */
    public void save() throws IOException {
       prepforSave();
-      Element e;
+      XHTMLElement e;
       if (!this.exists()) {
-         e = new Element("meta");
+         e = new XHTMLElement("meta");
          e.setAttribute("name", "created");
          e.setAttribute("content", Calendar.getInstance().getTime().toString());
          MetaData.add(e);
          createNewFile();
       } else if (getMetaData("created") == null) {
-         e = new Element("meta");
+         e = new XHTMLElement("meta");
          e.setAttribute("name", "created");
          e.setAttribute("content", "Sometime before, " + Calendar.getInstance().getTime().toString());
          MetaData.add(e);
       }
       if ((e = getMetaElement("last saved")) == null) {
-         e = new Element("meta");
+         e = new XHTMLElement("meta");
          e.setAttribute("name", "last saved");
          MetaData.add(e);
       }
@@ -246,13 +247,13 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * This is the a list of all the meta data found by the parse function,
     * or added at runtime.
     */
-   private ArrayList<Element> MetaData;
+   private ArrayList<XHTMLElement> MetaData;
 
-   public HashMap<String, Element> getDataElements() {
+   public HashMap<String, XHTMLElement> getDataElements() {
       return DataElements;
    }
 
-   public ArrayList<Element> getMetaItems() {
+   public ArrayList<XHTMLElement> getMetaItems() {
       return MetaData;
    }
 
@@ -345,8 +346,8 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param content the content of the new element
     * @return the new element
     */
-   protected Element setDataElement(String title, HashMap<String, String> attr, String content) {
-      Element e = new Element(title, attr);
+   protected XHTMLElement setDataElement(String title, HashMap<String, String> attr, String content) {
+      XHTMLElement e = new XHTMLElement(title, attr);
       e.setContent(content);
       DataElements.put(tokenize(e), e);
       return e;
@@ -359,7 +360,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param e
     * @return
     */
-   protected Element setDataElement(String title, Element e) {
+   protected XHTMLElement setDataElement(String title, XHTMLElement e) {
       DataElements.put(title, e);
       return e;
    }
@@ -373,7 +374,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param s
     * @return
     */
-   protected boolean dataElementExists(String s) {
+   public boolean dataElementExists(String s) {
       return DataElements.containsKey(s);
    }
 
@@ -382,7 +383,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param s
     * @return
     */
-   protected Element getDataElement(String s) {
+   public XHTMLElement getDataElement(String s) {
       return this.DataElements.get(s);
    }
 
@@ -391,7 +392,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * 
     * @throws java.io.IOException 
     */
-   protected void load() throws IOException {
+   public void load() throws IOException {
       parse(new FileReader(this));
    }
 
@@ -444,18 +445,18 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * These are the elements that the parse function identifies
     * as and saves because they were named in the tokens ArrayList.
     */
-   private HashMap<String, Element> DataElements;
+   private HashMap<String, XHTMLElement> DataElements;
 
    private void initialize() {
       tokens.add("title");
       tokens.add("style");
-      DataElements = new HashMap<String, Element>();
-      MetaData = new ArrayList<Element>();
-      Element e = new Element("meta");
+      DataElements = new HashMap<String, XHTMLElement>();
+      MetaData = new ArrayList<XHTMLElement>();
+      XHTMLElement e = new XHTMLElement("meta");
       e.setAttribute("http-equiv", "Content-Type");
       e.setAttribute("content", "text/html; charset=UTF-8");
       MetaData.add(e);
-      e = new Element("meta");
+      e = new XHTMLElement("meta");
       e.setAttribute("name", "generator");
       e.setAttribute("content", "RecipeJar");
       MetaData.add(e);
@@ -466,7 +467,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     *
     * @return the token associated with this element if there is one, otherwise null.
     */
-   private String tokenize(Element e) {
+   private String tokenize(XHTMLElement e) {
       for (int i = 0; i < tokens.size(); i++) {
          //for instance: the style tag.
          if (tokens.get(i).equals(e.getName())) {
@@ -519,7 +520,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
     * @param e
     * @return
     */
-   private boolean isNewMetaData(Element e) {
+   private boolean isNewMetaData(XHTMLElement e) {
       for (int i = 0; i < MetaData.size(); i++) {
          if (MetaData.get(i).hasAttribute("name") && e.hasAttribute("name")) {
             if (MetaData.get(i).getAttribute("name").equals(e.getAttribute("name"))) {
@@ -561,7 +562,7 @@ public abstract class AbstractXHTMLBasedFile extends File {
                   tag = tag + (char) c;
                   c = in.read();
                }
-               Element e = Element.parse(tag);
+               XHTMLElement e = XHTMLElement.parse(tag);
 
                if (e != null) {
                   if (e.getName().toLowerCase().equals("meta")) {

@@ -1,4 +1,5 @@
 package djava;
+
 import java.net.*;
 import java.io.*;
 import java.util.Scanner;
@@ -8,17 +9,18 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.io.IOException;
 
-public class DjavaServer
+
+public class Server
 {
    private Socket socket;
    private ServerSocket server;
    private InputStream in;
    private PrintWriter out;
 
-   private ArrayList<djava.Responder> responders;
-   private djava.Responder errorResponder;
+   private ArrayList<djava.util.AbstractResponder> responders;
+   private djava.util.AbstractResponder errorResponder;
    
-   public DjavaServer(String pageRoot)
+   public Server(String pageRoot)
    {
       File pageRootFile = new File(pageRoot);
       socket = null;
@@ -26,16 +28,16 @@ public class DjavaServer
       in = null;
       out = null;
 
-      errorResponder = new djava.Responder("/") {
+      errorResponder = new djava.util.AbstractResponder("/") {
          protected String getBody(String target){
-            return djava.Responder.getDefaultErrorBody();
+            return djava.util.AbstractResponder.getDefaultErrorBody();
          }
       };
-      responders = new ArrayList<djava.Responder>();
+      responders = new ArrayList<djava.util.AbstractResponder>();
       for(File f : pageRootFile.listFiles()){
          if(f.isDirectory()) {
-            responders.add(new djava.PageResponder("/"+f.getName(), pageRoot));
-         } else if(f.getName().endsWith(".djava")) responders.add(new djava.FormResponder("/", pageRoot));
+            responders.add(new responder.StaticResponder("/"+f.getName(), pageRoot));
+         } else if(f.getName().endsWith(".djava")) responders.add(new responder.ApplicationResponder("/", pageRoot));
       }
    }
    
@@ -145,12 +147,12 @@ public class DjavaServer
       out.flush();
    }
 
-   private djava.Responder getResponder(String target){
+   private djava.util.AbstractResponder getResponder(String target){
       String endPoint = target;
       if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
       Iterator i = responders.iterator();
       while(i.hasNext()){
-         djava.Responder r = (djava.Responder)i.next();
+         djava.util.AbstractResponder r = (djava.util.AbstractResponder)i.next();
          if(r.equals(endPoint)) return r;
       }
       return errorResponder;

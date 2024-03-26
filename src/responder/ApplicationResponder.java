@@ -1,4 +1,4 @@
-package djava;
+package responder;
 import java.io.File;
 import java.nio.file.Files;
 import java.io.IOException;
@@ -8,16 +8,16 @@ import java.util.HashMap;
 import java.util.Scanner;
 import java.text.DecimalFormat;
 
-public class FormResponder extends Responder
+public class ApplicationResponder extends djava.util.AbstractResponder
 {
 
    private HashMap<String, String> localVariables;
-   private AbstractXHTMLBasedFile template;
+   private djava.util.AbstractXHTMLBasedFile template;
 
-   public FormResponder(String ep, String pageRoot)
+   public ApplicationResponder(String ep, String pageRoot)
    {
       super(ep);
-      template = new AbstractXHTMLBasedFile(pageRoot+this.getEndPoint()+"index.djava"){
+      template = new djava.util.AbstractXHTMLBasedFile(pageRoot+this.getEndPoint()+"index.djava"){
          protected String buildBody(){
             StringBuilder s = new StringBuilder();
             s.append("<body>");
@@ -47,7 +47,7 @@ public class FormResponder extends Responder
       localVariables = new HashMap<String, String>();
    }
 
-   protected String getBody(String target) throws ResponderError
+   protected String getBody(String target) throws djava.util.ResponderException
    {
       return template.toString();
    }

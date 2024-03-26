@@ -1,11 +1,11 @@
-package djava;
+package djava.util;
 import java.util.HashMap;
 import java.util.List;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.io.StringReader;
 
-public abstract class Responder
+public abstract class AbstractResponder
 {
    // Static 
    private static String defaultErrorBody = "<!DOCTYPE html>\n"+
@@ -38,7 +38,7 @@ public abstract class Responder
    protected ArrayList<String> currentParameters;
    protected String currentHashId;
 
-   public Responder(String ep)
+   public AbstractResponder(String ep)
    {
       endPoint = ep;
    }
@@ -61,13 +61,13 @@ public abstract class Responder
             return PUTResponse(request);
          }
       }
-      catch(ResponderError e){
+      catch(ResponderException e){
          ERRORResponse(request);
       }
       return ERRORResponse(request);
    }
 
-   private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderError {
+   private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
       String target = request.get("request-line").split(" ")[1];
@@ -84,7 +84,7 @@ public abstract class Responder
       return response;
    }
 
-   private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderError {
+   private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderException {
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
       String target = request.get("request-line").split(" ")[1];
@@ -101,7 +101,7 @@ public abstract class Responder
       return response;
    }
 
-   private HashMap<String, String> PUTResponse(HashMap<String, String> request) throws ResponderError {
+   private HashMap<String, String> PUTResponse(HashMap<String, String> request) throws ResponderException {
       return ERRORResponse(request);
    }
 
@@ -189,13 +189,13 @@ public abstract class Responder
       return parameters;
    }
    
-   protected abstract String getBody(String target) throws ResponderError;
+   protected abstract String getBody(String target) throws ResponderException;
 
    /**
     * Override this method for a custom message
     **/
    protected String getErrorBody(String target){
-      return djava.Responder.getDefaultErrorBody();
+      return djava.util.AbstractResponder.getDefaultErrorBody();
    }
 
 }

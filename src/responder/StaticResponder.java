@@ -1,19 +1,20 @@
-package djava;
+package responder;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.io.IOException;
 
-public class PageResponder extends Responder
+public class StaticResponder extends djava.util.AbstractResponder
 {
    private String root;
 
-   public PageResponder(String ep, String root)
+   public StaticResponder(String ep, String root)
    {
       super(ep);
       this.root = root;
    }
 
-   protected String getBody(String target) throws ResponderError
+   protected String getBody(String target) throws djava.util.ResponderException
    {
       String body = "";
       File resource;
@@ -23,7 +24,7 @@ public class PageResponder extends Responder
       
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
-         else throw new ResponderError("Path does not exist");
+         else throw new djava.util.ResponderException("Path does not exist");
       }
       catch(IOException e) {
          System.out.println(e);

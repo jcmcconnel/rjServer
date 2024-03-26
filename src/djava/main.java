@@ -4,11 +4,10 @@ public class main {
    public static void main(String args[])
    {
       if(args.length == 0) {
-         System.out.println("Usage: java DjavaServer.main [PAGE ROOT] [PORTNUMBER]");
-         System.out.println("   This will start the DjavaServer listening on localhost:[PORTNUMBER]");
-         System.out.println("   PageResponders root at: [PAGE ROOT]");
+         System.out.println("Usage: java Server.main [PAGE ROOT] [PORTNUMBER]");
+         System.out.println("   This will start the Server listening on localhost:[PORTNUMBER]");
       } else {
-         DjavaServer server = new DjavaServer(args[0]);
+         Server server = new Server(args[0]);
          server.start(Integer.parseInt(args[1]));
       }
    }
