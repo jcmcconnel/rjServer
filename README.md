@@ -23,6 +23,12 @@ Current Status
     - GET requests are working just fine.
     - POST requests are being read in correctly, and responses are being returned.
 
+Development Goals
+================
+  - Move Responders to their own projects, or at least packages.
+  - Create system to load them on the fly.
+  - Make an application for Recipejar
+
 Updates
 ======
 Chicken Wings patch is live! Thanks to @AggieNateHarris

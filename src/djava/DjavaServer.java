@@ -32,9 +32,10 @@ public class DjavaServer
          }
       };
       responders = new ArrayList<djava.Responder>();
-      responders.add(new djava.FormResponder("/", pageRoot));
-      for(String s : pageRootFile.list()){
-         responders.add(new djava.PageResponder("/"+s, pageRoot));
+      for(File f : pageRootFile.listFiles()){
+         if(f.isDirectory()) {
+            responders.add(new djava.PageResponder("/"+f.getName(), pageRoot));
+         } else if(f.getName().endsWith(".djava")) responders.add(new djava.FormResponder("/", pageRoot));
       }
    }
    
