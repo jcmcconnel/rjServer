@@ -17,21 +17,21 @@ clean:
 
 .PHONY: copy-pages
 copy-pages:
-	cp -r src/pages build
+	cp -r src/responder/pages build/responder
 
 .PHONY: test-server
 test-server:
-	cp -r src/pages build && cd build && java djava.main ./pages 5000
+	cp -r src/responder/pages build/responder && cd build && java server.main 5000
 
 .PHONY: test-client
 test-client:
-	cd build && java djava.Client 5000
+	cd build && java Client 5000
 
 .PHONY: test-raw-client
 test-raw-client:
-	cd build && java djava.Client --http-test 5000
+	cd build && java Client --http-test 5000
 
 .PHONY: test-help
 test-help:
-	cd build && java djava.main
+	cd build && java server.main
 

@@ -147,9 +147,13 @@ public class Server
 
    private server.util.AbstractResponder getResponder(String target){
       String endPoint = target;
+      System.out.println("target: "+target);
       if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
-      if(responders.containsKey(endPoint)) return responders.get(endPoint);
-      else return errorResponder;
+      if(responders.containsKey(endPoint)) {
+         System.out.println("endPoint:"+endPoint);
+         return responders.get(endPoint);
+      }
+      else return responders.get("/error");
    }
 }
 

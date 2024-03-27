@@ -9,7 +9,7 @@ public class main {
       Integer portNum = Integer.valueOf(5000);
       File conf = null;
       Server server;
-      String pageRoot = "./pages";
+      String pageRoot = "./responder/pages";
       File pageRootFile = new File(pageRoot);
       
       for(int i=0; i<args.length; i++){
@@ -42,14 +42,15 @@ public class main {
          }
       }
       server = new Server();
-      server.start(portNum.intValue());
       //////////////// In progress ////////////////////
       for(File f : pageRootFile.listFiles()){
          if(f.isDirectory()) {
+         System.out.println("adding responder: "+f.getName());
             server.addResponder("/"+f.getName(), new responder.StaticResponder("/"+f.getName(), pageRoot));
          } else if(f.getName().endsWith(".djava")) server.addResponder("/", new responder.ApplicationResponder("/", pageRoot));
       }
       //////////////// In progress ////////////////////
+      server.start(portNum.intValue());
       if(conf != null){
          loadConf(conf);
       }
