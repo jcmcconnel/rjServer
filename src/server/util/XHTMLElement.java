@@ -7,7 +7,7 @@
  * Originally created for recipejar
  */
 //package recipejar.lib;
-package djava.util;
+package server.util;
 
 import java.io.StringWriter;
 import java.util.HashMap;

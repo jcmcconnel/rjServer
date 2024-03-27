@@ -1,4 +1,4 @@
-package djava;
+package server;
 
 import java.net.*;
 import java.io.*;
@@ -13,39 +13,37 @@ import java.io.IOException;
 public class Server
 {
    private Socket socket;
-   private ServerSocket server;
+   private ServerSocket serverSocket;
    private InputStream in;
    private PrintWriter out;
 
-   private ArrayList<djava.util.AbstractResponder> responders;
-   private djava.util.AbstractResponder errorResponder;
+   private HashMap<String, server.util.AbstractResponder> responders;
+   private server.util.AbstractResponder errorResponder;
    
-   public Server(String pageRoot)
+   public Server()
    {
-      File pageRootFile = new File(pageRoot);
       socket = null;
-      server = null;
+      serverSocket = null;
       in = null;
       out = null;
 
-      errorResponder = new djava.util.AbstractResponder("/") {
+      responders = new HashMap<String, server.util.AbstractResponder>();
+      responders.put("/error", new server.util.AbstractResponder("/") {
          protected String getBody(String target){
-            return djava.util.AbstractResponder.getDefaultErrorBody();
+            return getDefaultErrorBody();
          }
-      };
-      responders = new ArrayList<djava.util.AbstractResponder>();
-      for(File f : pageRootFile.listFiles()){
-         if(f.isDirectory()) {
-            responders.add(new responder.StaticResponder("/"+f.getName(), pageRoot));
-         } else if(f.getName().endsWith(".djava")) responders.add(new responder.ApplicationResponder("/", pageRoot));
-      }
+      });
+   }
+
+   public void addResponder(String endPoint, server.util.AbstractResponder r){
+      responders.put(endPoint, r);
    }
    
    public void start(int port)
    {
       try {
          // starts server and waits for a connection
-         server = new ServerSocket(port);
+         serverSocket = new ServerSocket(port);
          System.out.println("Server started");
          while(true) clientSession();
       }
@@ -62,7 +60,7 @@ public class Server
    
       System.out.println("Waiting for a client ...");
    
-      socket = server.accept();
+      socket = serverSocket.accept();
       System.out.println("Client accepted");
    
       // takes input from the client socket
@@ -147,15 +145,11 @@ public class Server
       out.flush();
    }
 
-   private djava.util.AbstractResponder getResponder(String target){
+   private server.util.AbstractResponder getResponder(String target){
       String endPoint = target;
       if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
-      Iterator i = responders.iterator();
-      while(i.hasNext()){
-         djava.util.AbstractResponder r = (djava.util.AbstractResponder)i.next();
-         if(r.equals(endPoint)) return r;
-      }
-      return errorResponder;
+      if(responders.containsKey(endPoint)) return responders.get(endPoint);
+      else return errorResponder;
    }
 }
 

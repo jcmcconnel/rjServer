@@ -1,4 +1,4 @@
-package djava.util;
+package server.util;
 import java.util.HashMap;
 import java.util.List;
 import java.io.IOException;
@@ -195,7 +195,7 @@ public abstract class AbstractResponder
     * Override this method for a custom message
     **/
    protected String getErrorBody(String target){
-      return djava.util.AbstractResponder.getDefaultErrorBody();
+      return server.util.AbstractResponder.getDefaultErrorBody();
    }
 
 }

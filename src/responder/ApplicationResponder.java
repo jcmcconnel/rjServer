@@ -8,16 +8,16 @@ import java.util.HashMap;
 import java.util.Scanner;
 import java.text.DecimalFormat;
 
-public class ApplicationResponder extends djava.util.AbstractResponder
+public class ApplicationResponder extends server.util.AbstractResponder
 {
 
    private HashMap<String, String> localVariables;
-   private djava.util.AbstractXHTMLBasedFile template;
+   private server.util.AbstractXHTMLBasedFile template;
 
    public ApplicationResponder(String ep, String pageRoot)
    {
       super(ep);
-      template = new djava.util.AbstractXHTMLBasedFile(pageRoot+this.getEndPoint()+"index.djava"){
+      template = new server.util.AbstractXHTMLBasedFile(pageRoot+this.getEndPoint()+"index.djava"){
          protected String buildBody(){
             StringBuilder s = new StringBuilder();
             s.append("<body>");
@@ -47,7 +47,7 @@ public class ApplicationResponder extends djava.util.AbstractResponder
       localVariables = new HashMap<String, String>();
    }
 
-   protected String getBody(String target) throws djava.util.ResponderException
+   protected String getBody(String target) throws server.util.ResponderException
    {
       return template.toString();
    }

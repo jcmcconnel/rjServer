@@ -6,11 +6,10 @@ SOURCEPATH=src
 CLASSPATH=build
 COMPILER=javac -sourcepath $(SOURCEPATH) -classpath $(CLASSPATH) -d $(CLASSPATH)
 
-build/responder/ApplicationResponder.class: src/responder/ApplicationResponder.java
 
 .PHONY: all
 all:
-	$(COMPILER) @source_files 
+	$(COMPILER) -Xlint @source_files 
 
 .PHONY: clean
 clean:

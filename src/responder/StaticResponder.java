@@ -4,7 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.io.IOException;
 
-public class StaticResponder extends djava.util.AbstractResponder
+public class StaticResponder extends server.util.AbstractResponder
 {
    private String root;
 
@@ -14,7 +14,7 @@ public class StaticResponder extends djava.util.AbstractResponder
       this.root = root;
    }
 
-   protected String getBody(String target) throws djava.util.ResponderException
+   protected String getBody(String target) throws server.util.ResponderException
    {
       String body = "";
       File resource;
@@ -24,7 +24,7 @@ public class StaticResponder extends djava.util.AbstractResponder
       
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
-         else throw new djava.util.ResponderException("Path does not exist");
+         else throw new server.util.ResponderException("Path does not exist");
       }
       catch(IOException e) {
          System.out.println(e);

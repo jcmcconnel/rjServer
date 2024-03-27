@@ -9,7 +9,7 @@
  * Originally created for recipejar
  */
 //package recipejar.lib;
-package djava.util;
+package server.util;
 
 import java.io.File;
 import java.io.FileReader;
@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Stack;
 import java.util.ArrayList;
-import djava.util.XHTMLElement;
+import server.util.XHTMLElement;
 
 /**
  * Defines general functions that are used by the recipejar.recipe.RecipeFile
