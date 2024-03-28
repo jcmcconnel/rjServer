@@ -1,16 +1,18 @@
 package server;
 
 import java.io.*;
+import java.util.Scanner;
 
 public class main {
+   private static Server server;
+   private static int exit_status;
+
    public static void main(String args[])
    {
       boolean interactive = false;
       Integer portNum = Integer.valueOf(5000);
       File conf = null;
-      Server server;
-      String pageRoot = "./responder/pages";
-      File pageRootFile = new File(pageRoot);
+      exit_status = -1;
       
       for(int i=0; i<args.length; i++){
          if(args[i].equals("-h")) {
@@ -41,21 +43,18 @@ public class main {
             }
          }
       }
-      server = new Server();
-      //////////////// In progress ////////////////////
-      for(File f : pageRootFile.listFiles()){
-         if(f.isDirectory()) {
-         System.out.println("adding responder: "+f.getName());
-            server.addResponder("/"+f.getName(), new responder.StaticResponder("/"+f.getName(), pageRoot));
-         } else if(f.getName().endsWith(".djava")) server.addResponder("/", new responder.ApplicationResponder("/", pageRoot));
-      }
-      //////////////// In progress ////////////////////
-      server.start(portNum.intValue());
+      server = new Server(portNum.intValue());
       if(conf != null){
          loadConf(conf);
       }
+      System.out.println(portNum);
       if(interactive){
-         while(true){
+         Scanner input = new Scanner(System.in);
+         String line;
+         while(exit_status < 0){
+            System.out.print(">>> ");
+            line = input.nextLine();
+            processCmd(line);
          }
       }
    }
@@ -78,4 +77,47 @@ public class main {
    }
 
    private static void loadConf(File conf){}
+
+   private static void processCmd(String cmdLine){
+      String pageRoot = "./responder/pages";
+      File pageRootFile = new File(pageRoot);
+
+      String cmd = cmdLine.split(" ")[0];
+           
+      try{
+         switch(cmd){
+            case "add-page":
+               if(cmdLine.split(" ").length > 1){
+                  File f = new File(pageRoot+"/"+cmdLine.split(" ")[1]);
+                  if(f.isDirectory()) server.addResponder("/"+f.getName(), new responder.StaticResponder("/"+f.getName(), pageRoot));
+                  else System.out.println("Page Does not Exist");
+               }
+               break;
+            case "add-app":
+               if(cmdLine.split(" ").length > 1){
+                  File f = new File(pageRoot+cmdLine.split(" ")[1]+"/index.djava");
+                  if(f.exists()) server.addResponder("/", new responder.ApplicationResponder("/", pageRoot));
+                  else System.out.println("App Does not Exist");
+               }
+               break;
+            case "help":
+               printHelp();
+               break;
+            case "start":
+               if(!server.isRunning()) server.start();
+               break;
+            case "stop":
+               server.stopServer();
+               break;
+            case "exit":
+               server.stopServer();
+               exit_status = 0;
+               break;
+         }
+      }
+      catch(IOException e){
+         System.out.println(e);
+      }
+   }
+
 }

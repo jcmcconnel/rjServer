@@ -10,22 +10,28 @@ import java.util.ArrayList;
 import java.io.IOException;
 
 
-public class Server
+public class Server implements Runnable
 {
    private Socket socket;
    private ServerSocket serverSocket;
    private InputStream in;
    private PrintWriter out;
+   private Integer portNumber;
 
    private HashMap<String, server.util.AbstractResponder> responders;
    private server.util.AbstractResponder errorResponder;
+
+   private HashMap<String, Object> serverState;
    
-   public Server()
+   public Server(Integer p)
    {
       socket = null;
       serverSocket = null;
       in = null;
       out = null;
+      portNumber = p;
+
+      serverState = new HashMap<String, Object>();
 
       responders = new HashMap<String, server.util.AbstractResponder>();
       responders.put("/error", new server.util.AbstractResponder("/") {
@@ -39,18 +45,42 @@ public class Server
       responders.put(endPoint, r);
    }
    
-   public void start(int port)
+   public void run()
    {
       try {
          // starts server and waits for a connection
-         serverSocket = new ServerSocket(port);
+         serverSocket = new ServerSocket(portNumber.intValue());
+         serverState.put("state", "running");
          System.out.println("Server started");
-         while(true) clientSession();
+         while(serverState.get("state").equals("running")) clientSession();
+      }
+      catch(SocketException e){
+         System.out.println("Socket closed");
+         System.out.println(e);
       }
       catch(IOException i)
       {
          System.out.println(i);
       }
+   }
+
+   public void start(){
+       serverState.put("current-thread", new Thread(this));
+       ((Thread)serverState.get("current-thread")).start();
+   }
+
+   public void stopServer() throws IOException {
+      serverState.put("state", "stopped");
+      serverSocket.close();
+   }
+
+   public boolean isRunning(){
+      if(serverState.containsKey("state")) return serverState.get("state").equals("running");
+      else return false;
+   }
+
+   public void changeState(String key, String value){
+      serverState.put(key, value);
    }
 
    private void clientSession() throws IOException
@@ -70,7 +100,6 @@ public class Server
       out = new PrintWriter(socket.getOutputStream());
    
       String line = this.readLine(in);
-      System.out.println(line);
    
       request.put("request-line", line);
 
@@ -114,7 +143,6 @@ public class Server
    
    private void readInRequest(InputStream in, HashMap<String, String> request) throws IOException {
       String line = request.get("request-line");
-      System.out.println(line);
       while(!line.isEmpty()) {
          line = this.readLine(in);
          System.out.println(line);

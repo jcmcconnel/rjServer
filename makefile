@@ -9,7 +9,7 @@ COMPILER=javac -sourcepath $(SOURCEPATH) -classpath $(CLASSPATH) -d $(CLASSPATH)
 
 .PHONY: all
 all:
-	$(COMPILER) -Xlint @source_files 
+	$(COMPILER) @source_files 
 
 .PHONY: clean
 clean:
@@ -21,7 +21,7 @@ copy-pages:
 
 .PHONY: test-server
 test-server:
-	cp -r src/responder/pages build/responder && cd build && java server.main 5000
+	cp -r src/responder/pages build/responder && cd build && java server.main -i 5000
 
 .PHONY: test-client
 test-client:
@@ -30,8 +30,4 @@ test-client:
 .PHONY: test-raw-client
 test-raw-client:
 	cd build && java Client --http-test 5000
-
-.PHONY: test-help
-test-help:
-	cd build && java server.main
 
