@@ -16,20 +16,24 @@ public class Server implements Runnable
    private ServerSocket serverSocket;
    private InputStream in;
    private PrintWriter out;
-   private Integer portNumber;
 
    private HashMap<String, server.util.AbstractResponder> responders;
    private server.util.AbstractResponder errorResponder;
 
    private HashMap<String, Object> serverState;
+
+   private StringWriter messages;
+   private PrintWriter msgOut;
    
-   public Server(Integer p)
+   public Server()
    {
       socket = null;
       serverSocket = null;
       in = null;
       out = null;
-      portNumber = p;
+
+      messages = new StringWriter();
+      msgOut = new PrintWriter(messages);
 
       serverState = new HashMap<String, Object>();
 
@@ -49,18 +53,19 @@ public class Server implements Runnable
    {
       try {
          // starts server and waits for a connection
-         serverSocket = new ServerSocket(portNumber.intValue());
+         if(serverState.containsKey("port") && serverState.get("port") != null) 
+            serverSocket = new ServerSocket(((Integer)serverState.get("port")).intValue());
+         else return;
          serverState.put("state", "running");
-         System.out.println("Server started");
+         msgOut.println("Server started");
          while(serverState.get("state").equals("running")) clientSession();
       }
       catch(SocketException e){
-         System.out.println("Socket closed");
-         System.out.println(e);
+         msgOut.println("Socket closed");
       }
       catch(IOException i)
       {
-         System.out.println(i);
+         msgOut.println(i);
       }
    }
 
@@ -71,7 +76,7 @@ public class Server implements Runnable
 
    public void stopServer() throws IOException {
       serverState.put("state", "stopped");
-      serverSocket.close();
+      if(serverSocket != null) serverSocket.close();
    }
 
    public boolean isRunning(){
@@ -79,7 +84,7 @@ public class Server implements Runnable
       else return false;
    }
 
-   public void changeState(String key, String value){
+   public void changeState(String key, Object value){
       serverState.put(key, value);
    }
 
@@ -88,10 +93,10 @@ public class Server implements Runnable
       HashMap<String, String> request = new HashMap<String, String>();
       HashMap<String, String> response = new HashMap<String, String>();
    
-      System.out.println("Waiting for a client ...");
+      msgOut.println("Waiting for a client ...");
    
       socket = serverSocket.accept();
-      System.out.println("Client accepted");
+      msgOut.println("Client accepted");
    
       // takes input from the client socket
 
@@ -118,13 +123,13 @@ public class Server implements Runnable
    
             }
          } else {
-            System.out.println("Accepted client in http mode");
+             msgOut.println("Accepted client in http mode");
             readInRequest(in, request);
             response = getResponder(request.get("request-line").split(" ")[1]).getResponse(request);
             writeResponse(out, response);
          }
       }
-      System.out.println("Closing connection");
+      msgOut.println("Closing connection");
    
       // close connection
       in.close();
@@ -145,7 +150,7 @@ public class Server implements Runnable
       String line = request.get("request-line");
       while(!line.isEmpty()) {
          line = this.readLine(in);
-         System.out.println(line);
+         //System.out.println(line);
          if(line.contains(":")){
             request.put(line.split(":")[0].trim().toLowerCase(), line.split(":")[1].trim());
          } 
@@ -155,7 +160,7 @@ public class Server implements Runnable
          while(s.toString().length() < Integer.parseInt(request.get("content-length"))) {
             s.append((char)in.read());
          }
-         System.out.println(s.toString());
+         //System.out.println(s.toString());
          request.put("body", s.toString());
       }
    }
@@ -175,13 +180,24 @@ public class Server implements Runnable
 
    private server.util.AbstractResponder getResponder(String target){
       String endPoint = target;
-      System.out.println("target: "+target);
+      msgOut.println("target: "+target);
       if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
       if(responders.containsKey(endPoint)) {
-         System.out.println("endPoint:"+endPoint);
+         msgOut.println("endPoint:"+endPoint);
          return responders.get(endPoint);
       }
       else return responders.get("/error");
+   }
+
+   public boolean hasMessages(){
+      return !messages.toString().isEmpty();
+   }
+
+   public String getMessages(){
+      String temp = messages.toString();
+      messages.getBuffer().setLength(0);
+      messages.getBuffer().trimToSize();
+      return temp;
    }
 }
 
