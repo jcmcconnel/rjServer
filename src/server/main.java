@@ -151,6 +151,14 @@ public class main {
                   else System.out.println("App Does not Exist");
                }
                break;
+            case "load-lib":
+               File libFile = new File(".");
+               URL url = libFile.toURI().toURL();
+               URL[] urls = new URL[]{url};
+               Classloader cl = new URLClassLoader(urls);
+               server.util.AbstractResponder sr = (server.util.AbstractResponder)cl.loadClass("responder.StaticResponder").getConstructor(String).instanceOf("/"+f.getName(), pageRoot);
+               server.addResponder(sr);
+               break;
             case "help":
                if(cmdLine.split(" ").length > 1) printHelp(cmdLine.split(" ")[1]);
                else printHelp("");
