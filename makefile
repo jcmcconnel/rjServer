@@ -21,7 +21,7 @@ copy-pages:
 
 .PHONY: test-server
 test-server:
-	cp -r src/responder/pages build/responder && cd build && java server.main -i 5000
+	cp -r src/responder/pages build/responder && cd build && java server.main -i --conf responder/pages/default.conf
 
 .PHONY: test-client
 test-client:

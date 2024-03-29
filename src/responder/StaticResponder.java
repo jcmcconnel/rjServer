@@ -6,21 +6,20 @@ import java.io.IOException;
 
 public class StaticResponder extends server.util.AbstractResponder
 {
-   private String root;
 
-   public StaticResponder(String ep, String root)
+   public StaticResponder(String root, String ep)
    {
-      super(ep);
-      this.root = root;
+      super(root, ep);
    }
 
    protected String getBody(String target) throws server.util.ResponderException
    {
       String body = "";
       File resource;
-      File ep = new File(root+this.getEndPoint()+"/index.html");
-      resource = new File(root+this.getEndPoint()+this.path+"/index.html");
-
+      File ep = new File(this.root+this.getEndPoint()+"/index.html");
+      resource = new File(this.root+this.getEndPoint()+this.path+"/index.html");
+      System.out.println("Static Responder EP:"+this.getEndPoint());
+      System.out.println("Static Responder root:"+this.root);
       
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());

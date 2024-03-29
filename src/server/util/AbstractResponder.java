@@ -27,7 +27,8 @@ public abstract class AbstractResponder
 
    // Instance 
 
-   private String endPoint;
+   protected String endPoint;
+   protected String root;
    private HashMap<String, String> response;
 
    private HashMap<String, String> errorResponse;
@@ -38,8 +39,15 @@ public abstract class AbstractResponder
    protected ArrayList<String> currentParameters;
    protected String currentHashId;
 
-   public AbstractResponder(String ep)
+   /**
+    * Creates a new responder
+    *
+    * @param r The application root directory, where this responder should look for resources.
+    * @param ep The application endpoint.  This is the part of the url where this responder will start handling requests.
+    **/
+   public AbstractResponder(String r, String ep)
    {
+      root = r;
       endPoint = ep;
    }
 

@@ -38,7 +38,7 @@ public class Server implements Runnable
       serverState = new HashMap<String, Object>();
 
       responders = new HashMap<String, server.util.AbstractResponder>();
-      responders.put("/error", new server.util.AbstractResponder("/") {
+      responders.put("/error", new server.util.AbstractResponder("./", "/") {
          protected String getBody(String target){
             return getDefaultErrorBody();
          }
@@ -86,6 +86,10 @@ public class Server implements Runnable
 
    public void changeState(String key, Object value){
       serverState.put(key, value);
+   }
+
+   public String readState(String key){
+      return serverState.get(key).toString();
    }
 
    private void clientSession() throws IOException

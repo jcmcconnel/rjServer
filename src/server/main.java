@@ -1,11 +1,29 @@
+/**
+ * 
+ *
+ * @Author James McConnel
+ **/
 package server;
 
 import java.io.*;
+import java.lang.ClassLoader;
+import java.lang.ReflectiveOperationException;
+import java.lang.reflect.Constructor;
 import java.util.Scanner;
+import java.net.URL;
+import java.net.URLClassLoader;
 
+/**
+ *
+ * Serves as a command line control program for the server itself.
+ * Commands are available to start, stop, detach, add Responders/Applications/Modules or whatever you want to call them.
+ *
+ **/
 public class main {
    private static Server server;
    private static int exit_status;
+
+   private static URLClassLoader cl;
 
    public static void main(String args[])
    {
@@ -23,6 +41,7 @@ public class main {
          else if(args[i].equals("--conf")) {
             try{
                conf = new File(args[i+1]);
+               System.out.println(conf.toURI());
                if(!conf.exists()) throw new NullPointerException();
                i++;
             }
@@ -51,7 +70,12 @@ public class main {
 
       // Read in conf file if provided
       if(conf != null){
-         loadConf(conf);
+         try{
+            loadConf(conf);
+         }
+         catch(FileNotFoundException e){
+            System.out.println(e);
+         }
       }
 
       // Enter interactive mode if requested.
@@ -72,9 +96,15 @@ public class main {
             case "set":
                System.out.println("Update system/control variables");
                break;
-            case "add-page":
+            case "add":
+               System.out.println("Usage: add [CLASSNAME] [ROOT] [ENDPOINT]");
+               System.out.println("   Adds a responder.  ");
+               System.out.println("   CLASSNAME must be a class accessible through one of the libraries loaded with: load-lib");
+               System.out.println("   ENDPOINT must contain the preceding slash.  I.e.: '/test'");
                break;
-            case "add-app":
+            case "load-lib":
+               System.out.println("Usage: load-lib [CLASSPATH]");
+               System.out.println("   Specify the classpath to search.");
                break;
             case "help":
                System.out.println("Using help");
@@ -92,7 +122,6 @@ public class main {
          default:
             System.out.println("Usage: java Server.main [OPTION(S)] [PORTNUMBER]");
             System.out.println("   This will start the Server listening on localhost:[PORTNUMBER]");
-            System.out.println("   If not provided the PORTNUMBER defaults to 5000");
             System.out.println("");
             System.out.println("   Options:");
             System.out.println("   -h Print this message and exits");
@@ -112,8 +141,13 @@ public class main {
     * Loads the configuration from a file.
     *
     **/
-   private static void loadConf(File conf){
-
+   private static void loadConf(File conf) throws FileNotFoundException{
+      Scanner in = new Scanner(conf);
+      while(in.hasNextLine()){
+         String line = in.nextLine();
+         System.out.println(line);
+         processCmd(line);
+      }
    }
 
    /*
@@ -121,9 +155,6 @@ public class main {
     *
     **/
    private static void processCmd(String cmdLine){
-      String pageRoot = "./responder/pages";
-      File pageRootFile = new File(pageRoot);
-
       String cmd = cmdLine.split(" ")[0];
            
       try{
@@ -137,27 +168,39 @@ public class main {
                   }
                }
                break;
-            case "add-page":
-               if(cmdLine.split(" ").length > 1){
-                  File f = new File(pageRoot+"/"+cmdLine.split(" ")[1]);
-                  if(f.isDirectory()) server.addResponder("/"+f.getName(), new responder.StaticResponder("/"+f.getName(), pageRoot));
-                  else System.out.println("Page Does not Exist");
-               }
-               break;
-            case "add-app":
-               if(cmdLine.split(" ").length > 1){
-                  File f = new File(pageRoot+cmdLine.split(" ")[1]+"/index.djava");
-                  if(f.exists()) server.addResponder("/", new responder.ApplicationResponder("/", pageRoot));
-                  else System.out.println("App Does not Exist");
-               }
+            case "add":
+               //add classname filesystem-root endpoint
+               if(cmdLine.split(" ").length == 4){
+                  try{
+                     File root = new File(cmdLine.split(" ")[2]);
+                     System.out.println();
+                     if(root.isDirectory()) {
+                        System.out.println(cmdLine.split(" ")[1]);
+                        Class rclass = cl.loadClass(cmdLine.split(" ")[1]);
+                        System.out.println(rclass.toString());
+                        Constructor rConstructor = rclass.getConstructor(String.class, String.class);
+                        server.util.AbstractResponder r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                        System.out.println(r.toString());
+                        server.addResponder("/"+cmdLine.split(" ")[3], r);
+                     } else System.out.println("Application root is not a directory.");
+                  }catch(ReflectiveOperationException e){
+                     System.out.println(e);
+                     printHelp("add");
+                  }
+               } else printHelp("add");
                break;
             case "load-lib":
-               File libFile = new File(".");
-               URL url = libFile.toURI().toURL();
-               URL[] urls = new URL[]{url};
-               Classloader cl = new URLClassLoader(urls);
-               server.util.AbstractResponder sr = (server.util.AbstractResponder)cl.loadClass("responder.StaticResponder").getConstructor(String).instanceOf("/"+f.getName(), pageRoot);
-               server.addResponder(sr);
+               if(cmdLine.split(" ").length == 2){
+                  String wd = cmdLine.split(" ")[1];
+                  if(wd.trim().equals(".")) wd = System.getProperty("user.dir");
+                  File libFile = new File(wd);
+                  System.out.println(libFile.getAbsoluteFile().toURI().toURL());
+                  if(libFile.getAbsoluteFile().isDirectory()){
+                     URL url = libFile.getAbsoluteFile().toURI().toURL();
+                     URL[] urls = new URL[]{url};
+                     cl = new URLClassLoader(urls);
+                  } else printHelp("load-lib");
+               } else printHelp("load-lib");
                break;
             case "help":
                if(cmdLine.split(" ").length > 1) printHelp(cmdLine.split(" ")[1]);
