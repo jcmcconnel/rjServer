@@ -48,6 +48,10 @@ public class Server implements Runnable
    public void addResponder(String endPoint, server.util.AbstractResponder r){
       responders.put(endPoint, r);
    }
+
+   public void removeResponder(String endPoint){
+      responders.remove(endPoint);
+   }
    
    public void run()
    {

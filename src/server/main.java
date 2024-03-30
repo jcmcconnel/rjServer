@@ -35,7 +35,7 @@ public class main {
       // Parse args
       for(int i=0; i<args.length; i++){
          if(args[i].equals("-h")) {
-            printHelp("");
+            printHelp("cmd-line-help");
             return;
          } else if(args[i].equals("-i")) interactive = true;
          else if(args[i].equals("--conf")) {
@@ -47,7 +47,7 @@ public class main {
             }
             catch(NullPointerException | ArrayIndexOutOfBoundsException e){
                System.out.println(e);
-               printHelp("");
+               printHelp("cmd-line-help");
                System.exit(1);
             }
 
@@ -58,7 +58,7 @@ public class main {
             catch(NumberFormatException e){
                System.out.println("Option not recognized");
                System.out.println(e);
-               printHelp("");
+               printHelp("cmd-line-help");
                return;
             }
          }
@@ -94,46 +94,84 @@ public class main {
    private static void printHelp(String cmd){
       switch(cmd){
             case "set":
-               System.out.println("Update system/control variables");
+               System.out.println("Usage: set [VARIABLE] [VALUE]");
+               System.out.println("  Update system/control variables");
+               System.out.println("  ");
+               System.out.println("  Variables:");
+               System.out.println("     port : The portnumber");
                break;
             case "add":
                System.out.println("Usage: add [CLASSNAME] [ROOT] [ENDPOINT]");
                System.out.println("   Adds a responder.  ");
+               System.out.println("  ");
                System.out.println("   CLASSNAME must be a class accessible through one of the libraries loaded with: load-lib");
-               System.out.println("   ENDPOINT must contain the preceding slash.  I.e.: '/test'");
+               System.out.println("   ROOT is the filesystem root for this responder");
+               System.out.println("   ENDPOINT is the relative address this responder will responder from.");
+               System.out.println("   Ex: add responder.StaticResponder ./pages user/home");
                break;
+            case "remove":
+               System.out.println("Usage: remove [ENDPOINT]");
+               System.out.println("   Removes the responder at [ENDPOINT]");
+               break; 
             case "load-lib":
                System.out.println("Usage: load-lib [CLASSPATH]");
-               System.out.println("   Specify the classpath to search.");
+               System.out.println("   Specify the classpath to search. I.e.: /classes/responders");
                break;
             case "help":
-               System.out.println("Using help");
+               System.out.println("Usage: help [TOPIC]");
+               System.out.println("   Outputs a help message for the topic.");
+               System.out.println("  ");
+               System.out.println("   Topics:");
+               System.out.println("      add");
+               System.out.println("      exit");
+               System.out.println("      load-lib");
+               System.out.println("      start");
+               System.out.println("      stop");
+               System.out.println("      getMessages");
+               System.out.println("      restart");
                break;
             case "getMessages":
+               System.out.println("Outputs the latest messages from the server.");
                break;
             case "start":
+               System.out.println("Starts the server.");
                break;
             case "stop":
+               System.out.println("Stops the server.");
                break;
-            case "detach":
+            case "restart":
+               System.out.println("Stops and then starts the server.");
                break;
             case "exit":
+               System.out.println("Stops the server, then exits the program.");
                break;
-         default:
-            System.out.println("Usage: java Server.main [OPTION(S)] [PORTNUMBER]");
-            System.out.println("   This will start the Server listening on localhost:[PORTNUMBER]");
-            System.out.println("");
-            System.out.println("   Options:");
-            System.out.println("   -h Print this message and exits");
-            System.out.println("   -i Start the server in interactive mode");
-            System.out.println("   --conf [FILENAME] Optional configuration file");
-            System.out.println("");
-            System.out.println("   -i and --conf are both optional, but if not provided the ");
-            System.out.println("   server will have nothing to serve.");
-            System.out.println("   Thus, if you would like to do anything interesting, you will need to specify");
-            System.out.println("   one or more responders to use either in the configuration file, ");
-            System.out.println("   or on the fly in interactive mode.");
-            break;
+            case "cmd-line-help":
+               System.out.println("Usage: java Server.main [OPTION(S)] [PORTNUMBER]");
+               System.out.println("   This will start the Server listening on localhost:[PORTNUMBER]");
+               System.out.println("");
+               System.out.println("   Options:");
+               System.out.println("   -h Print this message and exits");
+               System.out.println("   -i Start the server in interactive mode");
+               System.out.println("   --conf [FILENAME] Optional configuration file");
+               System.out.println("");
+               System.out.println("   -i and --conf are both optional, but if not provided the ");
+               System.out.println("   server will have nothing to serve.");
+               System.out.println("   Thus, if you would like to do anything interesting, you will need to specify");
+               System.out.println("   one or more responders to use either in the configuration file, ");
+               System.out.println("   or on the fly in interactive mode.");
+               break;
+            default:
+                  System.out.println("Welcome to the Djava Server. ");
+                  System.out.println("");
+                  System.out.println("To start a service, you will need to load a Responder,");
+                  System.out.println("and then add the Responder to the list.");
+                  System.out.println("You can get help with that by typing: help load-lib");
+                  System.out.println("and: help add");
+                  System.out.println("");
+                  System.out.println("Some commands may not take effect without a restart.");
+                  System.out.println("");
+                  System.out.println("For a list of all help topics, type: help help");
+               break;
       }
    }
 
@@ -179,15 +217,28 @@ public class main {
                         Class rclass = cl.loadClass(cmdLine.split(" ")[1]);
                         System.out.println(rclass.toString());
                         Constructor rConstructor = rclass.getConstructor(String.class, String.class);
-                        server.util.AbstractResponder r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                        server.util.AbstractResponder r;
+                        if(cmdLine.split(" ")[3].startsWith("/")) {
+                           r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
+                           server.addResponder(cmdLine.split(" ")[3], r);
+                        } else {
+                           r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                           server.addResponder("/"+cmdLine.split(" ")[3], r);
+                        }
                         System.out.println(r.toString());
-                        server.addResponder("/"+cmdLine.split(" ")[3], r);
                      } else System.out.println("Application root is not a directory.");
                   }catch(ReflectiveOperationException e){
                      System.out.println(e);
                      printHelp("add");
                   }
                } else printHelp("add");
+               break;
+            case "remove":
+               if(cmdLine.split(" ").length == 2) {
+                  if(cmdLine.split(" ")[1].startsWith("/")) 
+                     server.removeResponder(cmdLine.split(" ")[1]);
+                  else server.removeResponder("/"+cmdLine.split(" ")[1]);
+               } else printHelp("remove");
                break;
             case "load-lib":
                if(cmdLine.split(" ").length == 2){
@@ -215,12 +266,16 @@ public class main {
             case "stop":
                server.stopServer();
                break;
-            case "detach":
-               exit_status = 0;
+            case "restart":
+               processCmd("stop");
+               processCmd("start");
                break;
             case "exit":
                server.stopServer();
                exit_status = 0;
+               break;
+            default:
+               System.out.println("Command Not Recognized");
                break;
          }
       }

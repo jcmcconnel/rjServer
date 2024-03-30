@@ -49,6 +49,7 @@ public class ApplicationResponder extends server.util.AbstractResponder
 
    protected String getBody(String target) throws server.util.ResponderException
    {
+      System.out.println("Application responder EP:"+this.getEndPoint());
       return template.toString();
    }
 
