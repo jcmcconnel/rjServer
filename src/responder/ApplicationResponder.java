@@ -17,7 +17,7 @@ public class ApplicationResponder extends server.util.AbstractResponder
    public ApplicationResponder(String r, String ep)
    {
       super(r, ep);
-      template = new server.util.AbstractXHTMLBasedFile(this.root+this.getEndPoint()+"index.djava"){
+      template = new server.util.AbstractXHTMLBasedFile(this.root+this.getEndPoint()+"index.rjs"){
          protected String buildBody(){
             StringBuilder s = new StringBuilder();
             s.append("<body>");
