@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 
 
 public class Server implements Runnable
@@ -24,6 +25,8 @@ public class Server implements Runnable
 
    private StringWriter messages;
    private PrintWriter msgOut;
+
+   private static URLClassLoader responderLoader;
    
    public Server()
    {
@@ -45,12 +48,24 @@ public class Server implements Runnable
       });
    }
 
-   public void addResponder(String endPoint, server.util.AbstractResponder r){
-      responders.put(endPoint, r);
+   public void addResponder(String className, String rootDir, String endPoint) throws ReflectiveOperationException {
+      File root = new File(rootDir);
+      System.out.println();
+      if(root.isDirectory()) {
+         Class rclass = responderLoader.loadClass(className);
+         Constructor rConstructor = rclass.getConstructor(String.class, String.class);
+         server.util.AbstractResponder r;
+         r = (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint);
+         responders.put(endPoint, r);
+      } else System.out.println("Application root is not a directory.");
    }
 
    public void removeResponder(String endPoint){
       responders.remove(endPoint);
+   }
+
+   public void addClassLoader(ClassLoader cl){
+      responderLoader = (URLClassLoader)cl;
    }
    
    public void run()

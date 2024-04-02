@@ -23,8 +23,6 @@ public class main {
    private static Server server;
    private static int exit_status;
 
-   private static URLClassLoader cl;
-
    public static void main(String args[])
    {
       boolean interactive = false;
@@ -210,23 +208,11 @@ public class main {
                //add classname filesystem-root endpoint
                if(cmdLine.split(" ").length == 4){
                   try{
-                     File root = new File(cmdLine.split(" ")[2]);
-                     System.out.println();
-                     if(root.isDirectory()) {
-                        System.out.println(cmdLine.split(" ")[1]);
-                        Class rclass = cl.loadClass(cmdLine.split(" ")[1]);
-                        System.out.println(rclass.toString());
-                        Constructor rConstructor = rclass.getConstructor(String.class, String.class);
-                        server.util.AbstractResponder r;
-                        if(cmdLine.split(" ")[3].startsWith("/")) {
-                           r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
-                           server.addResponder(cmdLine.split(" ")[3], r);
-                        } else {
-                           r = (server.util.AbstractResponder)rConstructor.newInstance(cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
-                           server.addResponder("/"+cmdLine.split(" ")[3], r);
-                        }
-                        System.out.println(r.toString());
-                     } else System.out.println("Application root is not a directory.");
+                     if(cmdLine.split(" ")[3].startsWith("/")) {
+                        server.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
+                     } else {
+                        server.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                     }
                   }catch(ReflectiveOperationException e){
                      System.out.println(e);
                      printHelp("add");
@@ -249,7 +235,7 @@ public class main {
                   if(libFile.getAbsoluteFile().isDirectory()){
                      URL url = libFile.getAbsoluteFile().toURI().toURL();
                      URL[] urls = new URL[]{url};
-                     cl = new URLClassLoader(urls);
+                     server.addClassLoader(new URLClassLoader(urls));
                   } else printHelp("load-lib");
                } else printHelp("load-lib");
                break;
@@ -275,7 +261,7 @@ public class main {
                exit_status = 0;
                break;
             default:
-               System.out.println("Command Not Recognized");
+               System.out.println("Command Not Recognized: "+cmd);
                break;
          }
       }
