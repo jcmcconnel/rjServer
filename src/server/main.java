@@ -175,6 +175,7 @@ public class main {
 
    /*
     * Loads the configuration from a file.
+    * @param conf The configuration file to run.  All lines are sent to processCmd()
     *
     **/
    private static void loadConf(File conf) throws FileNotFoundException{
@@ -188,6 +189,7 @@ public class main {
 
    /*
     * Command processor for interactive mode
+    * @param cmdLine The command string the user typed in, or that came from the config file.
     *
     **/
    private static void processCmd(String cmdLine){
