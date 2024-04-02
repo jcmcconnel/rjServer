@@ -43,20 +43,21 @@ public class Server implements Runnable
       responders = new HashMap<String, server.util.AbstractResponder>();
       responders.put("/error", new server.util.AbstractResponder("./", "/") {
          protected String getBody(String target){
-            return getDefaultErrorBody();
+            return getDefaultErrorBody("Unknown Error: "+target);
          }
       });
    }
 
    public void addResponder(String className, String rootDir, String endPoint) throws ReflectiveOperationException {
       File root = new File(rootDir);
-      System.out.println();
+      System.out.println("adding responder");
       if(root.isDirectory()) {
          Class rclass = responderLoader.loadClass(className);
          Constructor rConstructor = rclass.getConstructor(String.class, String.class);
          server.util.AbstractResponder r;
          r = (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint);
          responders.put(endPoint, r);
+         System.out.println("responder added");
       } else System.out.println("Application root is not a directory.");
    }
 
@@ -146,7 +147,7 @@ public class Server implements Runnable
    
             }
          } else {
-             msgOut.println("Accepted client in http mode");
+            msgOut.println("Accepted client in http mode");
             readInRequest(in, request);
             response = getResponder(request.get("request-line").split(" ")[1]).getResponse(request);
             writeResponse(out, response);
@@ -171,9 +172,10 @@ public class Server implements Runnable
    
    private void readInRequest(InputStream in, HashMap<String, String> request) throws IOException {
       String line = request.get("request-line");
+      System.out.println(line);
       while(!line.isEmpty()) {
          line = this.readLine(in);
-         //System.out.println(line);
+         System.out.println(line);
          if(line.contains(":")){
             request.put(line.split(":")[0].trim().toLowerCase(), line.split(":")[1].trim());
          } 

@@ -8,34 +8,41 @@ import java.io.StringReader;
 public abstract class AbstractResponder
 {
    // Static 
-   private static String defaultErrorBody = "<!DOCTYPE html>\n"+
-              "<html>\n"+
-              "  <head>\n"+
-              "  </head>\n"+
-              "  <body>\n"+
-              "    <p>"+"There has been an error"+"</p>\n"+
-              "  </body>\n"+
-              "</html>\n";
 
-   protected static String getDefaultErrorBody(){
-      return defaultErrorBody;
-   }
-
-   public static void setDefaultErrorBody(String body){
-      defaultErrorBody = body;
+   protected static String getDefaultErrorBody(String errMsg){
+      return "<!DOCTYPE html>\n"+
+             "<html>\n"+
+                   "  <head>\n"+
+                   "  </head>\n"+
+                   "  <body>\n"+
+                   "    <p>"+"There has been an error:"+errMsg+"</p>\n"+
+                   "  </body>\n"+
+                   "</html>\n";
    }
 
    // Instance 
 
+   /**
+    * The pathname where this responder starts handling requests
+    **/
    protected String endPoint;
+
+   /**
+    * The directory where resources for this responder are housed.
+    **/
    protected String root;
+
+   /**
+    * ??? The additional path components after the endpoint?
+    **/
+   protected String path;
+
    private HashMap<String, String> response;
 
    private HashMap<String, String> errorResponse;
 
    protected HashMap<String, String> request;
 
-   protected String path;
    protected ArrayList<String> currentParameters;
    protected String currentHashId;
 
@@ -70,9 +77,9 @@ public abstract class AbstractResponder
          }
       }
       catch(ResponderException e){
-         ERRORResponse(request);
+         ERRORResponse(request, e.toString());
       }
-      return ERRORResponse(request);
+      return ERRORResponse(request, "Request type not supported");
    }
 
    private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {
@@ -110,10 +117,10 @@ public abstract class AbstractResponder
    }
 
    private HashMap<String, String> PUTResponse(HashMap<String, String> request) throws ResponderException {
-      return ERRORResponse(request);
+      return ERRORResponse(request, "PUT Requests not supported");
    }
 
-   protected HashMap<String, String> ERRORResponse(HashMap<String, String> request){
+   protected HashMap<String, String> ERRORResponse(HashMap<String, String> request, String errMsg){
       HashMap<String, String> response = new HashMap<String, String>();
       String responseBody = "";
       String target = request.get("request-line").split(" ")[1];
@@ -123,7 +130,7 @@ public abstract class AbstractResponder
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getErrorBody(target);
+      responseBody = getErrorBody(target, errMsg);
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
       return response;
@@ -202,8 +209,8 @@ public abstract class AbstractResponder
    /**
     * Override this method for a custom message
     **/
-   protected String getErrorBody(String target){
-      return server.util.AbstractResponder.getDefaultErrorBody();
+   protected String getErrorBody(String target, String errMsg){
+      return server.util.AbstractResponder.getDefaultErrorBody(errMsg);
    }
 
 }

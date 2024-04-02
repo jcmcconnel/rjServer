@@ -194,7 +194,7 @@ public class main {
     **/
    private static void processCmd(String cmdLine){
       String cmd = cmdLine.split(" ")[0];
-           
+      if(cmdLine.length() == 0) return; 
       try{
          switch(cmd){
             case "set":
