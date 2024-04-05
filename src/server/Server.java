@@ -172,10 +172,10 @@ public class Server implements Runnable
    
    private void readInRequest(InputStream in, HashMap<String, String> request) throws IOException {
       String line = request.get("request-line");
-      System.out.println(line);
+      //System.out.println(line);
       while(!line.isEmpty()) {
          line = this.readLine(in);
-         System.out.println(line);
+         //System.out.println(line);
          if(line.contains(":")){
             String key = line.split(":")[0].trim().toLowerCase();
             request.put(key, line.substring(line.indexOf(':')).trim());
@@ -186,7 +186,7 @@ public class Server implements Runnable
          while(s.toString().length() < Integer.parseInt(request.get("content-length"))) {
             s.append((char)in.read());
          }
-         System.out.println(s.toString());
+         //System.out.println(s.toString());
          request.put("body", s.toString());
       }
    }
@@ -214,7 +214,10 @@ public class Server implements Runnable
       if(referer == null || referer.equals("")) {
          if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
          else endPoint = target;
-      } else endPoint = referer;
+      } else {
+         if(referer.split("/").length > 0) endPoint = "/"+referer.split("/")[1];
+         else endPoint = referer;
+      }
       msgOut.println("endPoint: "+endPoint);
       if(responders.containsKey(endPoint)) {
          if(target.contains(endPoint)) {
