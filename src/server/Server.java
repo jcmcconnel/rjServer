@@ -41,7 +41,7 @@ public class Server implements Runnable
       serverState = new HashMap<String, Object>();
 
       responders = new HashMap<String, server.util.AbstractResponder>();
-      responders.put("/error", new server.util.AbstractResponder("./", "/") {
+      responders.put("/error", new server.util.AbstractResponder("./", "error") {
          protected String getBody(String target){
             return getDefaultErrorBody("Unknown Error: "+target);
          }
@@ -149,7 +149,7 @@ public class Server implements Runnable
          } else {
             msgOut.println("Accepted client in http mode");
             readInRequest(in, request);
-            response = getResponder(request.get("request-line").split(" ")[1]).getResponse(request);
+            response = getResponder(request).getResponse(request);
             writeResponse(out, response);
          }
       }
@@ -177,7 +177,8 @@ public class Server implements Runnable
          line = this.readLine(in);
          System.out.println(line);
          if(line.contains(":")){
-            request.put(line.split(":")[0].trim().toLowerCase(), line.split(":")[1].trim());
+            String key = line.split(":")[0].trim().toLowerCase();
+            request.put(key, line.substring(line.indexOf(':')).trim());
          } 
       }
       if(request.containsKey("content-length")) {
@@ -185,33 +186,48 @@ public class Server implements Runnable
          while(s.toString().length() < Integer.parseInt(request.get("content-length"))) {
             s.append((char)in.read());
          }
-         //System.out.println(s.toString());
+         System.out.println(s.toString());
          request.put("body", s.toString());
       }
    }
    
    private void writeResponse(PrintWriter out, HashMap<String, String> response) {
       out.println(response.get("status-line"));
+      System.out.println(response.get("status-line"));
       Iterator i = response.keySet().iterator();
       while(i.hasNext()){
          String key = (String)i.next();
-         if(!key.equals("status-line") && !key.equals("body"))
+         if(!key.equals("status-line") && !key.equals("body")){
             out.println(key+": "+response.get(key));
+            System.out.println(key+": "+response.get(key));
+         }
       }
       out.println("\n");
       out.println(response.get("body"));
       out.flush();
    }
 
-   private server.util.AbstractResponder getResponder(String target){
-      String endPoint = target;
-      msgOut.println("target: "+target);
-      if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
+   private server.util.AbstractResponder getResponder(HashMap<String, String> request){
+      String referer = removeHostName(request.get("referer"));
+      String target = request.get("request-line").split(" ")[1];
+      String endPoint;
+      if(referer == null || referer.equals("")) {
+         if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
+         else endPoint = target;
+      } else endPoint = referer;
+      msgOut.println("endPoint: "+endPoint);
       if(responders.containsKey(endPoint)) {
-         msgOut.println("endPoint:"+endPoint);
-         return responders.get(endPoint);
-      }
-      else return responders.get("/error");
+         if(target.contains(endPoint)) {
+            return responders.get(endPoint);
+         } else return responders.get(endPoint).getRedirect(endPoint+target);
+      } else return responders.get("/");
+   }
+
+   private String removeHostName(String fqdn) {
+      if(fqdn == null) return "";
+      String temp = fqdn.substring(fqdn.indexOf("//")+2);
+      temp = temp.substring(temp.indexOf('/'));
+      return temp;
    }
 
    public boolean hasMessages(){

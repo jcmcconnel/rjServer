@@ -16,14 +16,13 @@ public class StaticResponder extends server.util.AbstractResponder
    {
       String body = "";
       File resource;
-      resource = new File(this.root+this.path+"/index.html");
+      if(this.path == null || this.path.equals("")) resource = new File(this.root+"/index.html");
+      else resource = new File(this.root+this.path);
       System.out.println("Static Responder EP:"+this.getEndPoint());
       System.out.println("Static Responder root:"+this.root);
       System.out.println("Static Responder path:"+this.path);
       System.out.println("Static Responder resource:"+resource.toString());
 
-      if(resource.exists()) System.out.println("Static Responder resource does exist");
-      
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
          else throw new server.util.ResponderException("Path: "+this.path+" does not exist");

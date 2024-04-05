@@ -46,6 +46,8 @@ public abstract class AbstractResponder
    protected ArrayList<String> currentParameters;
    protected String currentHashId;
 
+   private String redirect;
+
    /**
     * Creates a new responder
     *
@@ -56,6 +58,7 @@ public abstract class AbstractResponder
    {
       root = r;
       endPoint = ep;
+      redirect = null;
    }
 
    public boolean equals(String ep){
@@ -66,6 +69,16 @@ public abstract class AbstractResponder
    }
 
    public HashMap<String, String> getResponse(HashMap<String, String> request){
+      if(redirect != null){
+         HashMap<String, String> response = new HashMap<String, String>();
+
+         response.put("status-line","HTTP/1.0 301 Moved Permanently");
+         response.put("Location", redirect);
+
+         redirect = null;
+
+         return response;
+      }
       this.request = request;
       try{
          if(request.get("request-line").startsWith("GET")){
@@ -74,12 +87,11 @@ public abstract class AbstractResponder
             return POSTResponse(request);
          } else if(request.get("request-line").startsWith("PUT")) {
             return PUTResponse(request);
-         }
+         } else return ERRORResponse(request, "Request type: "+request.get("request-line").split(" ")[0]+" not supported");
       }
       catch(ResponderException e){
          return ERRORResponse(request, e.toString());
       }
-      return ERRORResponse(request, "Request type: "+request.get("request-line").split(" ")[0]+" not supported");
    }
 
    private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {
@@ -135,6 +147,14 @@ public abstract class AbstractResponder
       response.put("body", responseBody);
       return response;
    }
+
+    /**
+     * Redirects relative paths to the correct address
+     **/
+    public AbstractResponder getRedirect(String s) {
+      redirect = s;
+      return this;
+    }
 
    protected String parsePath(String target){
       ArrayList<String> pathComponents = new ArrayList<String>();
