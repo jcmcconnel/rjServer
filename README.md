@@ -6,8 +6,6 @@ Just to be clear, this is a manual implementation of the HTTP protocol.
 That is to say, if you are looking for something shiny, I understand Java has an HttpServer package you can use.
 In the same spirit, you may find other things manually implemented as the primary intent of this project is as an educational exercise, and for personal use, as my hope is to eventually migrate my personally website to it primarily.  Maybe a bit lofty of a goal, but that is where my compass needle is pointing.
 
-I really need to come up with a different name, as originally I meant it as a bit of a joke, because I started it after trying Django.  I'm sorry, but I don't like Django.  Maybe it would be great for something more high-powered than what I need, but there you go.
-
 The server has been tested behind both Nginx and Apache proxies, and seems to be responding stably.
 
 It is currently single threaded.
