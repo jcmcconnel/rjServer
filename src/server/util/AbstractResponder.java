@@ -15,7 +15,7 @@ public abstract class AbstractResponder
                    "  <head>\n"+
                    "  </head>\n"+
                    "  <body>\n"+
-                   "    <p>"+"There has been an error:"+errMsg+"</p>\n"+
+                   "    <p>"+"There has been an error: "+errMsg+"</p>\n"+
                    "  </body>\n"+
                    "</html>\n";
    }
@@ -77,9 +77,9 @@ public abstract class AbstractResponder
          }
       }
       catch(ResponderException e){
-         ERRORResponse(request, e.toString());
+         return ERRORResponse(request, e.toString());
       }
-      return ERRORResponse(request, "Request type not supported");
+      return ERRORResponse(request, "Request type: "+request.get("request-line").split(" ")[0]+" not supported");
    }
 
    private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {

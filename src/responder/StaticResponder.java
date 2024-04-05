@@ -16,8 +16,7 @@ public class StaticResponder extends server.util.AbstractResponder
    {
       String body = "";
       File resource;
-      File ep = new File(this.root+this.getEndPoint()+"/index.html");
-      resource = new File(this.root+this.getEndPoint()+this.path+"/index.html");
+      resource = new File(this.root+this.path+"/index.html");
       System.out.println("Static Responder EP:"+this.getEndPoint());
       System.out.println("Static Responder root:"+this.root);
       System.out.println("Static Responder path:"+this.path);
@@ -27,7 +26,7 @@ public class StaticResponder extends server.util.AbstractResponder
       
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
-         else throw new server.util.ResponderException("Path does not exist");
+         else throw new server.util.ResponderException("Path: "+this.path+" does not exist");
       }
       catch(IOException e) {
          System.out.println(e);
