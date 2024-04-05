@@ -43,7 +43,7 @@ public class Server implements Runnable
       responders = new HashMap<String, server.util.AbstractResponder>();
       responders.put("/error", new server.util.AbstractResponder("./", "/") {
          protected String getBody(String target){
-            return getDefaultErrorBody();
+            return getDefaultErrorBody(this.request);
          }
       });
    }

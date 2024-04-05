@@ -7,22 +7,19 @@ import java.io.StringReader;
 
 public abstract class AbstractResponder
 {
-   // Static 
-   private static String defaultErrorBody = "<!DOCTYPE html>\n"+
-              "<html>\n"+
-              "  <head>\n"+
-              "  </head>\n"+
-              "  <body>\n"+
-              "    <p>"+"There has been an error"+"</p>\n"+
-              "  </body>\n"+
-              "</html>\n";
-
-   protected static String getDefaultErrorBody(){
-      return defaultErrorBody;
-   }
-
-   public static void setDefaultErrorBody(String body){
-      defaultErrorBody = body;
+   protected static String getDefaultErrorBody(HashMap<String, String> request){
+      String errorMsg = "<p>There has been an error</p>"+
+                        "<p>Could not retrieve: "+request.get("request-line").split(" ")[1]+"</p>";
+      StringBuilder s = new StringBuilder();
+      s.append("<!DOCTYPE html>\n");
+      s.append("<html>\n");
+      s.append("  <head>\n");
+      s.append("  </head>\n");
+      s.append("  <body>\n");
+      s.append(errorMsg);
+      s.append("  </body>\n");
+      s.append("</html>\n");
+      return s.toString();
    }
 
    // Instance 
@@ -123,7 +120,7 @@ public abstract class AbstractResponder
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getErrorBody(target);
+      responseBody = getErrorBody();
       response.put("Content-Length", String.valueOf(responseBody.length()));
       response.put("body", responseBody);
       return response;
@@ -202,8 +199,8 @@ public abstract class AbstractResponder
    /**
     * Override this method for a custom message
     **/
-   protected String getErrorBody(String target){
-      return server.util.AbstractResponder.getDefaultErrorBody();
+   protected String getErrorBody(){
+      return server.util.AbstractResponder.getDefaultErrorBody(request);
    }
 
 }
