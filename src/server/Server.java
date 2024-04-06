@@ -10,6 +10,11 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 
+import java.net.InetSocketAddress;
+import java.nio.channels.*;
+import java.nio.*;
+import java.util.Set;
+
 
 /**
  * Notes: Move toward ServerSocketChannel/SocketChannel non-blocking implementation.
@@ -21,8 +26,11 @@ public class Server implements Runnable
 {
    private Socket socket;
    private ServerSocket serverSocket;
+
    private InputStream in;
    private PrintWriter out;
+
+   private ServerSocketChannel serverChannel;
 
    private HashMap<String, Object> serverState;
 
@@ -37,6 +45,8 @@ public class Server implements Runnable
       in = null;
       out = null;
 
+      serverChannel = null;
+
       messages = new StringWriter();
       msgOut = new PrintWriter(messages);
 
@@ -50,14 +60,87 @@ public class Server implements Runnable
    public void run()
    {
       try {
+         Selector selector;
          // starts server and waits for a connection
          if(serverState.containsKey("port") && serverState.get("port") != null) {
-            serverSocket = new ServerSocket(((Integer)serverState.get("port")).intValue());
-         }
-         else return;
-         serverState.put("state", "running");
-         msgOut.println("Server started");
-         while(serverState.get("state").equals("running")) clientSession();
+            //serverSocket = new ServerSocket(((Integer)serverState.get("port")).intValue());
+
+            //https://stackoverflow.com/questions/58635444/proper-way-to-read-write-through-a-socketchannel
+            selector = Selector.open();
+            serverChannel = ServerSocketChannel.open();
+            serverChannel.configureBlocking(false);
+            serverChannel.bind(new InetSocketAddress(InetAddress.getByName("localhost"), ((Integer)serverState.get("port")).intValue()));
+
+            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+            serverState.put("state", "running");
+            msgOut.println("Server started");
+
+
+            while(serverState.get("state").equals("running")){
+               selector.select();
+
+               Set<SelectionKey> selectedKeys = selector.selectedKeys();
+               
+               Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
+               while(keyIterator.hasNext()){
+                  SelectionKey key = keyIterator.next();
+                  if(key.isAcceptable()) {
+                     /* This is where we accept connections. */
+                     ServerSocketChannel server = (ServerSocketChannel) key.channel();
+                     SocketChannel clientChannel = server.accept();
+                     if(clientChannel == null) {
+                        continue;
+                     }
+
+                     System.out.println("client accepted");
+
+                     clientChannel.configureBlocking(false);
+                     clientChannel.register(selector, SelectionKey.OP_READ|SelectionKey.OP_WRITE);
+                  } else if(key.isReadable()){
+                     /* This is where we read from previously accepted connections. */
+                     ByteBuffer buf = ByteBuffer.allocate(256);
+                     SocketChannel client = (SocketChannel) key.channel();
+                     int bytesRead = client.read(buf);
+                     if(key.attachment() == null) key.attach(new String(buf.array()));
+                     else key.attach(key.attachment().toString()+new String(buf.array()));
+                     //System.out.println("readable: "+key.attachment().toString()+"$$$"+bytesRead);
+
+                     if(bytesRead == -1 || bytesRead < 256 || key.attachment().toString().endsWith("\r\n\r\n") || key.attachment().toString().endsWith("\n\n")){
+                        System.out.println("Ending read");
+                        System.out.println(key.attachment().toString());
+                        //client.close();
+                        key.cancel();
+                        System.out.println(selectedKeys.toString());
+                     }
+
+                  } else if(key.isWritable() && !key.isReadable()){
+                     System.out.println("Something is writable");
+                     if(key.attachment() != null) System.out.println(key.attachment().toString());
+                     SocketChannel client = (SocketChannel) key.channel();
+                     ByteBuffer b = ByteBuffer.allocate(50);
+                     b.putChar('H');
+                     b.putChar('T');
+                     b.putChar('T');
+                     b.putChar('P');
+                     b.putChar('/');
+                     b.putChar('1');
+                     b.putChar('.');
+                     b.putChar('0');
+                     b.putChar(' ');
+                     b.putChar('4');
+                     b.putChar('0');
+                     b.putChar('4');
+                     b.putChar('\n');
+                     
+                     client.write(b);
+                     client.close();
+                     key.cancel();
+                  }
+               }
+               //clientSession();
+            }
+         } else return;
       }
       catch(SocketException e){
          msgOut.println("Socket closed");
@@ -69,7 +152,7 @@ public class Server implements Runnable
    }
 
    /**
-    * Could be used to override Thread start point method.
+    * Starts the server in a new thread.
     **/
    public void start(){
        serverState.put("current-thread", new Thread(this));
