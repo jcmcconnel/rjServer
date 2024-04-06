@@ -135,9 +135,8 @@ public class Server implements Runnable
                response = server.util.AbstractResponder.getResponder(request).getResponse(request);
             }catch(ReflectiveOperationException | FileNotFoundException e){
                System.out.println(e);
-               response = server.util.AbstractResponder.getErrorResponse(request);
             }
-            writeResponse(out, response);
+            writeResponse(out, server.util.AbstractResponderresponse);
          }
       }
       msgOut.println("Closing connection");

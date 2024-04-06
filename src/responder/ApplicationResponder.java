@@ -14,7 +14,7 @@ public class ApplicationResponder extends server.util.AbstractResponder
    private HashMap<String, String> localVariables;
    private server.util.AbstractXHTMLBasedFile template;
 
-   public ApplicationResponder(String r, String ep)
+   public ApplicationResponder(File r, String ep)
    {
       super(r, ep);
       template = new server.util.AbstractXHTMLBasedFile(this.root+"/index.rjs"){

@@ -7,11 +7,15 @@ import java.io.IOException;
 public class StaticResponder extends server.util.AbstractResponder
 {
 
-   public StaticResponder(String root, String ep)
+   public StaticResponder(File root, String ep)
    {
       super(root, ep);
    }
 
+   /**
+    *
+    * TODO: Check for things like php and allow for system calls.
+    **/
    protected String getBody(String target) throws server.util.ResponderException
    {
       String body = "";

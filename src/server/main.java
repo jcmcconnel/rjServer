@@ -211,23 +211,18 @@ public class main {
             case "add":
                //add classname filesystem-root endpoint
                if(cmdLine.split(" ").length == 4){
-                  try{
-                     if(cmdLine.split(" ")[3].startsWith("/")) {
-                        AbstractResponder.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
-                     } else {
-                        AbstractResponder.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
-                     }
-                  }catch(ReflectiveOperationException e){
-                     System.out.println(e);
-                     printHelp("add");
+                  if(cmdLine.split(" ")[3].startsWith("/")) {
+                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
+                  } else {
+                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
                   }
                } else printHelp("add");
                break;
             case "remove":
                if(cmdLine.split(" ").length == 2) {
                   if(cmdLine.split(" ")[1].startsWith("/")) 
-                     AbstractResponder.removeResponder(cmdLine.split(" ")[1]);
-                  else AbstractResponder.removeResponder("/"+cmdLine.split(" ")[1]);
+                     AbstractResponder.removeResponderTemplate(cmdLine.split(" ")[1]);
+                  else AbstractResponder.removeResponderTemplate("/"+cmdLine.split(" ")[1]);
                } else printHelp("remove");
                break;
             case "load-lib":
