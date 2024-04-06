@@ -11,6 +11,12 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 
 
+/**
+ * Notes: Move toward ServerSocketChannel/SocketChannel non-blocking implementation.
+ *   - Non-blocking input would allow for multiple connections, Asynchronous only means that the socket operation is disconnected from the parent process.
+ *     This will require a list of open client-connections along with their partial request contents
+ **/
+
 public class Server implements Runnable
 {
    private Socket socket;
@@ -18,15 +24,11 @@ public class Server implements Runnable
    private InputStream in;
    private PrintWriter out;
 
-   private HashMap<String, server.util.AbstractResponder> responders;
-   private server.util.AbstractResponder errorResponder;
-
    private HashMap<String, Object> serverState;
 
    private StringWriter messages;
    private PrintWriter msgOut;
 
-   private static URLClassLoader responderLoader;
    
    public Server()
    {
@@ -40,41 +42,18 @@ public class Server implements Runnable
 
       serverState = new HashMap<String, Object>();
 
-      responders = new HashMap<String, server.util.AbstractResponder>();
-      responders.put("/error", new server.util.AbstractResponder("./", "error") {
-         protected String getBody(String target){
-            return getDefaultErrorBody(this.request);
-         }
-      });
    }
 
-   public void addResponder(String className, String rootDir, String endPoint) throws ReflectiveOperationException {
-      File root = new File(rootDir);
-      System.out.println("adding responder");
-      if(root.isDirectory()) {
-         Class rclass = responderLoader.loadClass(className);
-         Constructor rConstructor = rclass.getConstructor(String.class, String.class);
-         server.util.AbstractResponder r;
-         r = (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint);
-         responders.put(endPoint, r);
-         System.out.println("responder added");
-      } else System.out.println("Application root is not a directory.");
-   }
-
-   public void removeResponder(String endPoint){
-      responders.remove(endPoint);
-   }
-
-   public void addClassLoader(ClassLoader cl){
-      responderLoader = (URLClassLoader)cl;
-   }
-   
+   /**
+    * Runnable start point
+    **/
    public void run()
    {
       try {
          // starts server and waits for a connection
-         if(serverState.containsKey("port") && serverState.get("port") != null) 
+         if(serverState.containsKey("port") && serverState.get("port") != null) {
             serverSocket = new ServerSocket(((Integer)serverState.get("port")).intValue());
+         }
          else return;
          serverState.put("state", "running");
          msgOut.println("Server started");
@@ -89,6 +68,9 @@ public class Server implements Runnable
       }
    }
 
+   /**
+    * Could be used to override Thread start point method.
+    **/
    public void start(){
        serverState.put("current-thread", new Thread(this));
        ((Thread)serverState.get("current-thread")).start();
@@ -149,7 +131,7 @@ public class Server implements Runnable
          } else {
             msgOut.println("Accepted client in http mode");
             readInRequest(in, request);
-            response = getResponder(request).getResponse(request);
+            response = server.util.AbstractResponder.getResponder(request).getResponse(request);
             writeResponse(out, response);
          }
       }
@@ -205,32 +187,6 @@ public class Server implements Runnable
       out.println("\n");
       out.println(response.get("body"));
       out.flush();
-   }
-
-   private server.util.AbstractResponder getResponder(HashMap<String, String> request){
-      String referer = removeHostName(request.get("referer"));
-      String target = request.get("request-line").split(" ")[1];
-      String endPoint;
-      if(referer == null || referer.equals("")) {
-         if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
-         else endPoint = target;
-      } else {
-         if(referer.split("/").length > 0) endPoint = "/"+referer.split("/")[1];
-         else endPoint = referer;
-      }
-      msgOut.println("endPoint: "+endPoint);
-      if(responders.containsKey(endPoint)) {
-         if(target.contains(endPoint)) {
-            return responders.get(endPoint);
-         } else return responders.get(endPoint).getRedirect(endPoint+target);
-      } else return responders.get("/");
-   }
-
-   private String removeHostName(String fqdn) {
-      if(fqdn == null) return "";
-      String temp = fqdn.substring(fqdn.indexOf("//")+2);
-      temp = temp.substring(temp.indexOf('/'));
-      return temp;
    }
 
    public boolean hasMessages(){

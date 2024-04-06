@@ -13,6 +13,8 @@ import java.util.Scanner;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import server.util.AbstractResponder;
+
 /**
  *
  * Serves as a command line control program for the server itself.
@@ -211,9 +213,9 @@ public class main {
                if(cmdLine.split(" ").length == 4){
                   try{
                      if(cmdLine.split(" ")[3].startsWith("/")) {
-                        server.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
+                        AbstractResponder.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
                      } else {
-                        server.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                        AbstractResponder.addResponder(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
                      }
                   }catch(ReflectiveOperationException e){
                      System.out.println(e);
@@ -224,8 +226,8 @@ public class main {
             case "remove":
                if(cmdLine.split(" ").length == 2) {
                   if(cmdLine.split(" ")[1].startsWith("/")) 
-                     server.removeResponder(cmdLine.split(" ")[1]);
-                  else server.removeResponder("/"+cmdLine.split(" ")[1]);
+                     AbstractResponder.removeResponder(cmdLine.split(" ")[1]);
+                  else AbstractResponder.removeResponder("/"+cmdLine.split(" ")[1]);
                } else printHelp("remove");
                break;
             case "load-lib":
@@ -237,7 +239,7 @@ public class main {
                   if(libFile.getAbsoluteFile().isDirectory()){
                      URL url = libFile.getAbsoluteFile().toURI().toURL();
                      URL[] urls = new URL[]{url};
-                     server.addClassLoader(new URLClassLoader(urls));
+                     AbstractResponder.addClassLoader(new URLClassLoader(urls));
                   } else printHelp("load-lib");
                } else printHelp("load-lib");
                break;

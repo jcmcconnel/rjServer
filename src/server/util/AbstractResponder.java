@@ -1,12 +1,72 @@
 package server.util;
+
 import java.util.HashMap;
 import java.util.List;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.io.StringReader;
+import java.io.File;
+import java.net.URLClassLoader;
+import java.lang.reflect.Constructor;
 
 public abstract class AbstractResponder
 {
+   private static HashMap<String, server.util.AbstractResponder> responders = new HashMap<String, AbstractResponder>();
+   private static AbstractResponder errorResponder = new AbstractResponder("./", "error") {
+      protected String getBody(String target){
+         return getDefaultErrorBody(this.request);
+      }
+   };
+   private static URLClassLoader responderLoader;
+
+   public static void addResponder(String className, String rootDir, String endPoint) throws ReflectiveOperationException {
+      File root = new File(rootDir);
+      System.out.println("adding responder");
+      if(root.isDirectory()) {
+         Class rclass = responderLoader.loadClass(className);
+         Constructor rConstructor = rclass.getConstructor(String.class, String.class);
+         server.util.AbstractResponder r;
+         r = (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint);
+         responders.put(endPoint, r);
+         System.out.println("responder added");
+      } else System.out.println("Application root is not a directory.");
+   }
+
+   public static void removeResponder(String endPoint){
+      responders.remove(endPoint);
+   }
+
+   public static void addClassLoader(ClassLoader cl){
+      responderLoader = (URLClassLoader)cl;
+   }
+   
+   public static AbstractResponder getResponder(HashMap<String, String> request){
+      String referer = removeHostName(request.get("referer"));
+      String target = request.get("request-line").split(" ")[1];
+      String endPoint;
+      if(referer == null || referer.equals("")) {
+         if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
+         else endPoint = target;
+      } else {
+         if(referer.split("/").length > 0) endPoint = "/"+referer.split("/")[1];
+         else endPoint = referer;
+      }
+      //msgOut.println("endPoint: "+endPoint);
+      if(responders.containsKey(endPoint)) {
+         if(target.contains(endPoint)) {
+            return responders.get(endPoint);
+         } else return responders.get(endPoint).getRedirect(endPoint+target);
+      } else return responders.get("/");
+   }
+
+   private static String removeHostName(String fqdn) {
+      if(fqdn == null) return "";
+      String temp = fqdn.substring(fqdn.indexOf("//")+2);
+      temp = temp.substring(temp.indexOf('/'));
+      return temp;
+   }
+
+
    protected static String getDefaultErrorBody(HashMap<String, String> request){
       String errorMsg = "<p>There has been an error</p>"+
                         "<p>Could not retrieve: "+request.get("request-line").split(" ")[1]+"</p>";
