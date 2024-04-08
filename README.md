@@ -22,19 +22,21 @@ Primary Features
 
 Current Status
 ==============
-  - Interative mode: working, additional commands are under consideration.
-  - Online help: working
-  - Dynamic loading of custom responders: working
+  - Interative mode: Working. Additional commands are under consideration.
+  - Online help: Working
+  - Dynamic loading of custom responders: Working
   - HTTP request implementation: *in progress*, Currently compatible with HTTP 1.0.
-    - GET requests: working.
-    - POST requests: working.
+    - GET requests: Working.
+    - POST requests: Working.
 
 Development Goals
 ================
   - [-] Move Responders to their own projects, or at least packages.
   - [X] Create system to load them on the fly.
-  - [ ] Migrate to HttpServer, or at least integrate it as an option.
-  - [ ] Make it multi-threaded for additional capacity.
+  - [ ] ~~Migrate to HttpServer, or at least integrate it as an option.~~ 
+    - Will not do.  Using SocketChannels manually.
+  - [-] Make it multi-threaded for additional capacity.
+    - *In Progress:* Here's an interesting question: What makes multi-threading better?  According to my research, using additional threads only improves client load handling by an order of magnitude. Apparently the preferred method is to use SocketChannels and looping to accept client connection requests, read, and write depending on the state of the saved connection.  This allows a single thread to handle massively greater connection volumes than multi-threading, while at the same time keeping the free threads available for the heavy lifting of request processing.  i.e.: One thread handles connection management, additional threads can be used for data processing.
 
 Acknowledgments
 ======
