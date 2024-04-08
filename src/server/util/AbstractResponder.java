@@ -75,6 +75,7 @@ public abstract class AbstractResponder
    
    public static AbstractResponder getResponder(HashMap<String, String> request) throws ReflectiveOperationException, FileNotFoundException {
       String referer = removeHostName(request.get("referer"));
+      System.out.println("Getting responder: "+request.get("request-line"));
       String target = request.get("request-line").split(" ")[1];
       String endPoint;
       if(referer == null || referer.equals("")) {
