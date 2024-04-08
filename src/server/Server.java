@@ -93,13 +93,14 @@ public class Server implements Runnable
          Iterator i = response.keySet().iterator();
          while(i.hasNext()){
             String key = (String)i.next();
-            if(!key.equals("status-line") && !key.equals("body")){
+            if(!key.equals("status-line") && !key.equals("body")&&!key.equals("Content-Length")){
                out.println(key+": "+response.get(key));
                //System.out.println(key+": "+response.get(key));
             }
          }
-         out.println("\n");
-         out.println(response.get("body"));
+         out.println("Content-Length: "+response.get("Content-Length"));
+         out.print("\n");
+         out.print(response.get("body"));
          out.flush();
          return output.toString();
       }
@@ -190,7 +191,8 @@ public class Server implements Runnable
                      clientChannel.register(selector, SelectionKey.OP_READ|SelectionKey.OP_WRITE);
 
                      activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis()));
-
+                     selector.selectedKeys().remove(key);
+                     break;
                   }
                   if(key.isReadable()){
                      /* This is where we read from previously accepted connections. */
@@ -218,16 +220,19 @@ public class Server implements Runnable
                            return;
                         }
 
-                        try{
-                        connectedClient.response = server.util.AbstractResponder.getResponder(connectedClient.request).getResponse(connectedClient.request);
-                        }catch(ReflectiveOperationException | FileNotFoundException e){
-                           System.out.println(e);
+                        //try{
                            connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
-                        }
+                           //connectedClient.response = server.util.AbstractResponder.getResponder(connectedClient.request).getResponse(connectedClient.request);
+                           //}catch(ReflectiveOperationException | FileNotFoundException e){
+                           //   System.out.println(e);
+                           //   connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
+                           //}
 
                         key.attach(connectedClient);
 
                      } else key.attach(connectedClient);
+                     selector.selectedKeys().remove(key);
+                     break;
                   }
                   if(key.isWritable()){
                      SocketChannel client = (SocketChannel) key.channel();
@@ -253,6 +258,7 @@ public class Server implements Runnable
 
                      b.wrap(output.substring(mark, end).getBytes());
                      connectedClient.mark = end;
+                     System.out.println("Writing: "+output.substring(mark, end));
                      try {
                         client.write(b);
                         client.shutdownOutput();
@@ -260,10 +266,13 @@ public class Server implements Runnable
                         System.out.println(e);
                      }
                      if(connectedClient.mark >= output.length()){
+                        System.out.println("Closing channel");
                         client.close();
-                        key.cancel();
+                        //key.cancel();
                         //remove activeConnection
                      }
+                     selector.selectedKeys().remove(key);
+                     break;
                   }
                }
             }
