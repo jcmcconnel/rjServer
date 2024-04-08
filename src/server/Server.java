@@ -34,14 +34,17 @@ public class Server implements Runnable
       public HashMap<String, String> response;
       public boolean readyToWrite = false;
 
+      public ServerSocketChannel server;
+
       public int mark = 0;
 
 
-      public Client(InetSocketAddress r, long t){
+      public Client(InetSocketAddress r, long t, ServerSocketChannel s){
          remote = r;
          startTime = t;
          rawRequest = new StringBuilder();
          request = new HashMap<String, String>();
+         server = s;
       }
       /**
        * Returns true, if the end of input is reached.
@@ -190,24 +193,23 @@ public class Server implements Runnable
                      clientChannel.configureBlocking(false);
                      clientChannel.register(selector, SelectionKey.OP_READ|SelectionKey.OP_WRITE);
 
-                     activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis()));
-                     selector.selectedKeys().remove(key);
+                     activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis(), server));
+                     keyIterator.remove();
                      break;
                   }
-                  if(key.isReadable()){
+                  SocketChannel client = (SocketChannel) key.channel();
+                  Client connectedClient = null;
+                  Iterator i = activeConnections.iterator();
+                  while(i.hasNext()){
+                     Client c = (Client)i.next();
+                     if(c.remote.equals(client.getRemoteAddress())){
+                        connectedClient = c;
+                        break;
+                     }
+                  }
+                  if(key.isReadable() && connectedClient != null && !connectedClient.readyToWrite){
                      /* This is where we read from previously accepted connections. */
                      ByteBuffer buf = ByteBuffer.allocate(256);
-                     SocketChannel client = (SocketChannel) key.channel();
-                     Client connectedClient = null;
-                     Iterator i = activeConnections.iterator();
-                     while(i.hasNext()){
-                        Client c = (Client)i.next();
-                        if(c.remote.equals(client.getRemoteAddress())){
-                           connectedClient = c;
-                           break;
-                        }
-                     }
-                     if(connectedClient == null) break;
                      System.out.println("connectedClient"+connectedClient.remote.toString());
                      connectedClient.buffer = ByteBuffer.allocate(256);
                      client.read(connectedClient.buffer);
@@ -215,63 +217,36 @@ public class Server implements Runnable
                      if(connectedClient.processBuffer()){
                         if(connectedClient.rawRequest.toString().trim().isEmpty()){
                            //Return ERROR
+                           keyIterator.remove();
                            //client.close();
-                           //key.cancel();
-                           return;
+                           break;
                         }
 
-                        //try{
+                        try{
                            connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
-                           //connectedClient.response = server.util.AbstractResponder.getResponder(connectedClient.request).getResponse(connectedClient.request);
-                           //}catch(ReflectiveOperationException | FileNotFoundException e){
-                           //   System.out.println(e);
-                           //   connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
-                           //}
+                           connectedClient.response = server.util.AbstractResponder.getResponder(connectedClient.request).getResponse(connectedClient.request);
+                           }catch(ReflectiveOperationException | FileNotFoundException e){
+                              System.out.println(e);
+                              connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
+                           }
 
                         key.attach(connectedClient);
 
                      } else key.attach(connectedClient);
-                     selector.selectedKeys().remove(key);
-                     break;
                   }
-                  if(key.isWritable()){
-                     SocketChannel client = (SocketChannel) key.channel();
-                     Client connectedClient = null;
-                     Iterator i = activeConnections.iterator();
-                     while(i.hasNext()){
-                        Client c = (Client)i.next();
-                        if(c.remote.equals(client.getRemoteAddress())){
-                           connectedClient = c;
-                           break;
-                        }
+                  if(key.isWritable() && connectedClient != null && connectedClient.readyToWrite){
+                     if(connectedClient == null || !connectedClient.readyToWrite){
+                        if(connectedClient == null) System.out.println("null client");
+                        if(!connectedClient.readyToWrite) System.out.println("Not ready to write");
+                        keyIterator.remove();
+                        break;
                      }
-                     if(connectedClient == null || !connectedClient.readyToWrite) break;
-                     System.out.println("Ready to write: "+connectedClient.remote.toString());
 
                      String output = connectedClient.getRawResponse();
-                     System.out.println(connectedClient.getRawResponse());
-                     int mark = connectedClient.mark;
-                     int end = mark;
-                     if(mark+256 >= output.length()) end = output.length();
-
-                     ByteBuffer b = ByteBuffer.allocate(256);
-
-                     b.wrap(output.substring(mark, end).getBytes());
-                     connectedClient.mark = end;
-                     System.out.println("Writing: "+output.substring(mark, end));
-                     try {
-                        client.write(b);
-                        client.shutdownOutput();
-                     } catch(IOException e){
-                        System.out.println(e);
-                     }
-                     if(connectedClient.mark >= output.length()){
-                        System.out.println("Closing channel");
-                        client.close();
-                        //key.cancel();
-                        //remove activeConnection
-                     }
-                     selector.selectedKeys().remove(key);
+                     System.out.println("Ready to write: "+connectedClient.remote.toString());
+                     client.write(ByteBuffer.allocate(output.length()).wrap(output.getBytes()));
+                     client.close();
+                     keyIterator.remove();
                      break;
                   }
                }

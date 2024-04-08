@@ -55,8 +55,9 @@ public class Client {
          }
       } else {
          // string to read message from input
-         String line = "GET / HTTP/1.1";
+         String line = "GET /test HTTP/1.1";
          out.println(line);
+         out.println("");
          out.flush();
          while (!line.equals("")) {
             line = input.nextLine();
@@ -64,8 +65,12 @@ public class Client {
             out.flush();
          }
 
-         while (response.hasNextLine()) {
-            System.out.println(response.nextLine());
+         //while (response.hasNextLine()) {
+         while (true) {
+            System.out.println(response.hasNextLine());
+            if(response.hasNextLine()) System.out.println(response.nextLine());
+            else break;
+            //System.out.println("No next line");
          }
       }
 
