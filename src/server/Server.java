@@ -35,30 +35,41 @@ public class Server implements Runnable
       public boolean readyToWrite = false;
 
       public ServerSocketChannel server;
+      public SocketChannel client;
 
-      public int mark = 0;
+      public boolean isDead = false;
 
-
-      public Client(InetSocketAddress r, long t, ServerSocketChannel s){
+      public Client(InetSocketAddress r, long t, ServerSocketChannel s, SocketChannel c){
          remote = r;
          startTime = t;
          rawRequest = new StringBuilder();
          request = new HashMap<String, String>();
          server = s;
+         client = c;
       }
+
+      /**
+       * Closes things associated with this client.
+       **/
+      public void close() throws IOException {
+         client.close();
+         //server.close();
+         isDead = true;
+      }
+
       /**
        * Returns true, if the end of input is reached.
        **/
       public boolean processBuffer(){
-         System.out.println("Process buffer");
+         msgOut.println("Process buffer");
          buffer.rewind();
          for(int i=0; i<buffer.array().length; i++){
             byte b = buffer.get();
-            //System.out.print((char)b);
+            //msgOut.print((char)b);
             rawRequest.append((char)b);
             if(b == '\0') {
-               System.out.println("EOF found: "+(char)b+i);
-               System.out.println(rawRequest.toString());
+               msgOut.println("EOF found: "+(char)b+i);
+               msgOut.println(rawRequest.toString());
                rawRequest.trimToSize();
                readInRequest();
                readyToWrite = true;
@@ -92,13 +103,13 @@ public class Server implements Runnable
          ByteArrayOutputStream output = new ByteArrayOutputStream();
          PrintWriter out = new PrintWriter(output);
          out.println(response.get("status-line"));
-         //System.out.println(response.get("status-line"));
+         //msgOut.println(response.get("status-line"));
          Iterator i = response.keySet().iterator();
          while(i.hasNext()){
             String key = (String)i.next();
             if(!key.equals("status-line") && !key.equals("body")&&!key.equals("Content-Length")){
                out.println(key+": "+response.get(key));
-               //System.out.println(key+": "+response.get(key));
+               //msgOut.println(key+": "+response.get(key));
             }
          }
          out.println("Content-Length: "+response.get("Content-Length"));
@@ -110,7 +121,6 @@ public class Server implements Runnable
    }
 
    private Socket socket;
-   private ServerSocket serverSocket;
 
    private InputStream in;
    private PrintWriter out;
@@ -128,7 +138,6 @@ public class Server implements Runnable
    public Server()
    {
       socket = null;
-      serverSocket = null;
       in = null;
       out = null;
 
@@ -148,13 +157,10 @@ public class Server implements Runnable
     **/
    public void run()
    {
+      Selector selector;
       try {
-         Selector selector;
          // starts server and waits for a connection
          if(serverState.containsKey("port") && serverState.get("port") != null) {
-            //--- Standard Socket ---//
-            //serverSocket = new ServerSocket(((Integer)serverState.get("port")).intValue());
-
             //--- Selector ---//
             //https://stackoverflow.com/questions/58635444/proper-way-to-read-write-through-a-socketchannel
             selector = Selector.open();
@@ -169,9 +175,6 @@ public class Server implements Runnable
 
 
             while(serverState.get("state").equals("running")){
-               //--- Standard Socket ---//
-               //clientSession();
-
                //--- Selector ---//
                selector.select();
 
@@ -182,26 +185,27 @@ public class Server implements Runnable
                   SelectionKey key = keyIterator.next();
                   if(key.isAcceptable()) {
                      /* This is where we accept connections. */
-                     ServerSocketChannel server = (ServerSocketChannel) key.channel();
-                     SocketChannel clientChannel = server.accept();
+                     //ServerSocketChannel server = (ServerSocketChannel) key.channel();
+                     SocketChannel clientChannel = serverChannel.accept();
                      if(clientChannel == null) {
                         continue;
                      }
 
-                     System.out.println("client accepted");
+                     msgOut.println("client accepted");
 
                      clientChannel.configureBlocking(false);
                      clientChannel.register(selector, SelectionKey.OP_READ|SelectionKey.OP_WRITE);
 
-                     activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis(), server));
+                     activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis(), serverChannel, clientChannel));
                      keyIterator.remove();
-                     break;
+                     continue;
                   }
                   SocketChannel client = (SocketChannel) key.channel();
                   Client connectedClient = null;
                   Iterator i = activeConnections.iterator();
                   while(i.hasNext()){
                      Client c = (Client)i.next();
+                     if(c.isDead) i.remove();
                      if(c.remote.equals(client.getRemoteAddress())){
                         connectedClient = c;
                         break;
@@ -210,25 +214,25 @@ public class Server implements Runnable
                   if(key.isReadable() && connectedClient != null && !connectedClient.readyToWrite){
                      /* This is where we read from previously accepted connections. */
                      ByteBuffer buf = ByteBuffer.allocate(256);
-                     System.out.println("connectedClient"+connectedClient.remote.toString());
+                     msgOut.println("connectedClient"+connectedClient.remote.toString());
                      connectedClient.buffer = ByteBuffer.allocate(256);
-                     client.read(connectedClient.buffer);
+                     connectedClient.client.read(connectedClient.buffer);
 
                      if(connectedClient.processBuffer()){
                         if(connectedClient.rawRequest.toString().trim().isEmpty()){
                            //Return ERROR
                            keyIterator.remove();
-                           //client.close();
-                           break;
+                           connectedClient.close();
+                           continue;
                         }
 
                         try{
                            connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
                            connectedClient.response = server.util.AbstractResponder.getResponder(connectedClient.request).getResponse(connectedClient.request);
-                           }catch(ReflectiveOperationException | FileNotFoundException e){
-                              System.out.println(e);
-                              connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
-                           }
+                        }catch(ReflectiveOperationException | FileNotFoundException e){
+                           msgOut.println(e);
+                           connectedClient.response = server.util.AbstractResponder.getErrorResponse(connectedClient.request);
+                        }
 
                         key.attach(connectedClient);
 
@@ -236,25 +240,34 @@ public class Server implements Runnable
                   }
                   if(key.isWritable() && connectedClient != null && connectedClient.readyToWrite){
                      if(connectedClient == null || !connectedClient.readyToWrite){
-                        if(connectedClient == null) System.out.println("null client");
-                        if(!connectedClient.readyToWrite) System.out.println("Not ready to write");
+                        if(connectedClient == null) msgOut.println("null client");
+                        if(!connectedClient.readyToWrite) msgOut.println("Not ready to write");
                         keyIterator.remove();
-                        break;
+                        continue;
                      }
 
                      String output = connectedClient.getRawResponse();
-                     System.out.println("Ready to write: "+connectedClient.remote.toString());
+                     msgOut.println("Ready to write: "+connectedClient.remote.toString());
                      client.write(ByteBuffer.allocate(output.length()).wrap(output.getBytes()));
-                     client.close();
+                     connectedClient.close();
                      keyIterator.remove();
-                     break;
+                     continue;
                   }
                }
             }
-         } else return;
+            msgOut.println("Closing channel");
+            selector.close();
+            Iterator<Client> iter = activeConnections.iterator();
+            while(iter.hasNext()) {
+               iter.next().close();
+               iter.remove();
+            }
+            serverChannel.close();
+         }
       }
       catch(SocketException e){
-         msgOut.println("Socket closed");
+         msgOut.println("Socket Error");
+         msgOut.println(e);
       }
       catch(IOException i)
       {
@@ -272,7 +285,8 @@ public class Server implements Runnable
 
    public void stopServer() throws IOException {
       serverState.put("state", "stopped");
-      if(serverSocket != null) serverSocket.close();
+      msgOut.println("Stopping Server");
+      //((Thread)serverState.get("current-thread")).interrupt();
    }
 
    public boolean isRunning(){
@@ -288,62 +302,6 @@ public class Server implements Runnable
       return serverState.get(key).toString();
    }
 
-   private void clientSession() throws IOException
-   {
-      HashMap<String, String> request = new HashMap<String, String>();
-      HashMap<String, String> response = new HashMap<String, String>();
-   
-      msgOut.println("Waiting for a client ...");
-   
-      socket = serverSocket.accept();
-      System.out.println(socket.getInetAddress().toString());
-      System.out.println(socket.getPort());
-      System.out.println(socket.getRemoteSocketAddress().toString());
-      msgOut.println("Client accepted");
-   
-      // takes input from the client socket
-
-      in = socket.getInputStream();
-   
-      out = new PrintWriter(socket.getOutputStream());
-   
-      String line = this.readLine(in);
-   
-      request.put("request-line", line);
-
-      if(!line.trim().equals("")) {
-         line = this.readLine(in);
-         if(line.equals("echoMode")){
-            // reads message from client until "Over" is sent
-            while (!line.equals("Over"))
-            {
-               if(in.available() > 0) {
-                  line = this.readLine(in);
-                  System.out.println(line);
-                  out.println("This is what I received: "+line);
-                  out.flush();
-               }
-   
-            }
-         } else {
-            msgOut.println("Accepted client in http mode");
-            readInRequest(in, request);
-            try{
-               response = server.util.AbstractResponder.getResponder(request).getResponse(request);
-            }catch(ReflectiveOperationException | FileNotFoundException e){
-               System.out.println(e);
-               response = server.util.AbstractResponder.getErrorResponse(request);
-            }
-            writeResponse(out, response);
-         }
-      }
-      msgOut.println("Closing connection");
-   
-      // close connection
-      in.close();
-      socket.close();
-   }
-
    private String readLine(InputStream in) throws IOException {
       int c = in.read();
       StringBuilder s = new StringBuilder();
@@ -356,10 +314,10 @@ public class Server implements Runnable
    
    private void readInRequest(InputStream in, HashMap<String, String> request) throws IOException {
       String line = request.get("request-line");
-      //System.out.println(line);
+      //msgOut.println(line);
       while(!line.isEmpty()) {
          line = this.readLine(in);
-         //System.out.println(line);
+         //msgOut.println(line);
          if(line.contains(":")){
             String key = line.split(":")[0].trim().toLowerCase();
             request.put(key, line.substring(line.indexOf(':')).trim());
@@ -370,20 +328,20 @@ public class Server implements Runnable
          while(s.toString().length() < Integer.parseInt(request.get("content-length"))) {
             s.append((char)in.read());
          }
-         //System.out.println(s.toString());
+         //msgOut.println(s.toString());
          request.put("body", s.toString());
       }
    }
    
    private void writeResponse(PrintWriter out, HashMap<String, String> response) {
       out.println(response.get("status-line"));
-      System.out.println(response.get("status-line"));
+      msgOut.println(response.get("status-line"));
       Iterator i = response.keySet().iterator();
       while(i.hasNext()){
          String key = (String)i.next();
          if(!key.equals("status-line") && !key.equals("body")){
             out.println(key+": "+response.get(key));
-            System.out.println(key+": "+response.get(key));
+            msgOut.println(key+": "+response.get(key));
          }
       }
       out.println("\n");

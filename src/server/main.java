@@ -25,11 +25,12 @@ public class main {
    private static Server server;
    private static int exit_status;
 
+   private static Integer portNum = null;
+   private static File conf = null;
+
    public static void main(String args[])
    {
       boolean interactive = false;
-      Integer portNum = null;
-      File conf = null;
       exit_status = -1;
       
       // Parse args
@@ -64,19 +65,7 @@ public class main {
          }
       }
 
-      // Create new server
-      server = new Server();
-      if(portNum != null) server.changeState("port", portNum);
-
-      // Read in conf file if provided
-      if(conf != null){
-         try{
-            loadConf(conf);
-         }
-         catch(FileNotFoundException e){
-            System.out.println(e);
-         }
-      }
+      processCmd("start");
 
       // Enter interactive mode if requested.
       if(interactive){
@@ -161,16 +150,16 @@ public class main {
                System.out.println("   or on the fly in interactive mode.");
                break;
             default:
-                  System.out.println("Welcome to the Djava Server. ");
-                  System.out.println("");
-                  System.out.println("To start a service, you will need to load a Responder,");
-                  System.out.println("and then add the Responder to the list.");
-                  System.out.println("You can get help with that by typing: help load-lib");
-                  System.out.println("and: help add");
-                  System.out.println("");
-                  System.out.println("Some commands may not take effect without a restart.");
-                  System.out.println("");
-                  System.out.println("For a list of all help topics, type: help help");
+               System.out.println("Welcome to the Djava Server. ");
+               System.out.println("");
+               System.out.println("To start a service, you will need to load a Responder,");
+               System.out.println("and then add the Responder to the list.");
+               System.out.println("You can get help with that by typing: help load-lib");
+               System.out.println("and: help add");
+               System.out.println("");
+               System.out.println("Some commands may not take effect without a restart.");
+               System.out.println("");
+               System.out.println("For a list of all help topics, type: help help");
                break;
       }
    }
@@ -178,14 +167,16 @@ public class main {
    /*
     * Loads the configuration from a file.
     * @param conf The configuration file to run.  All lines are sent to processCmd()
+    * @param ignoreStart Will ignore any start commands in the conf file
     *
     **/
-   private static void loadConf(File conf) throws FileNotFoundException{
+   private static void loadConf(File conf, boolean ignoreStart) throws FileNotFoundException{
       Scanner in = new Scanner(conf);
       while(in.hasNextLine()){
          String line = in.nextLine();
          System.out.println(line);
-         processCmd(line);
+         if(line.equals("start") && ignoreStart) continue;
+         else processCmd(line);
       }
    }
 
@@ -246,7 +237,27 @@ public class main {
                System.out.println(server.getMessages());
                break;
             case "start":
-               if(!server.isRunning()) server.start();
+               if(server != null && server.isRunning()) {
+                  break;
+               } 
+               if(server == null) server = new Server();
+               else if(server.readState("state").equals("stopped")){
+                  server = null;
+                  System.gc();
+                  server = new Server();
+               }
+               if(!server.isRunning()) {
+                  if(portNum != null) server.changeState("port", portNum);
+                  if(conf != null){
+                     try{
+                        loadConf(conf, true);
+                     }
+                     catch(FileNotFoundException e){
+                        System.out.println(e);
+                     }
+                  }
+                  server.start();
+               }
                break;
             case "stop":
                server.stopServer();
@@ -256,7 +267,7 @@ public class main {
                processCmd("start");
                break;
             case "exit":
-               server.stopServer();
+               if(server != null) server.stopServer();
                exit_status = 0;
                break;
             default:
