@@ -4,7 +4,7 @@ src/server/util/AbstractXHTMLBasedFile.java
 src/server/util/ResponderException.java
 src/server/util/XHTMLElement.java
 
-src/responder/StaticResponder.java
+src/responder/BasicResponder.java
 src/responder/ApplicationResponder.java
 
 src/server/Server.java

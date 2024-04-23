@@ -19,25 +19,28 @@ public abstract class AbstractResponder
       public File root;
       public String endPoint;
 
-      public ResponderTemplate(String c, File f, String e){
+      public String[] fileExtensions; //The filetypes this responder will handle.
+
+      public ResponderTemplate(String c, File f, String e, String[] exts){
          className = c;
          root = f;
          endPoint = e;
+         fileExtensions = exts;
       }
    }
 
    private static HashMap<String, ResponderTemplate> templates = new HashMap<String, ResponderTemplate>();
    private static HashMap<String, server.util.AbstractResponder> responders = new HashMap<String, AbstractResponder>();
-   private static AbstractResponder errorResponder = new AbstractResponder(new File("."), "error") {
+   private static AbstractResponder errorResponder = new AbstractResponder(new File("."), "error", new String[]{"html", "htm"}) {
       protected String getBody(String target){
          return getDefaultErrorBody(this.request);
       }
    };
    private static URLClassLoader responderLoader;
 
-   private static AbstractResponder createResponder(String className, File rootDir, String endPoint) throws ReflectiveOperationException, FileNotFoundException {
+   private static AbstractResponder createResponder(String className, File rootDir, String endPoint, String[] exts) throws ReflectiveOperationException, FileNotFoundException {
       if(className.equals("error")){
-         return new AbstractResponder(new File("."), "/error") {
+         return new AbstractResponder(new File("."), "/error", new String[]{"html", "htm"}) {
             protected String getBody(String target){
                return getDefaultErrorBody(this.request);
             }
@@ -46,18 +49,18 @@ public abstract class AbstractResponder
          System.out.println("adding responder");
          if(rootDir.isDirectory()) {
             Class rclass = responderLoader.loadClass(className);
-            Constructor rConstructor = rclass.getConstructor(File.class, String.class);
+            Constructor rConstructor = rclass.getConstructor(File.class, String.class, String[].class);
             server.util.AbstractResponder r;
-            return (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint);
+            return (server.util.AbstractResponder)rConstructor.newInstance(rootDir, endPoint, exts);
          } else throw new FileNotFoundException("Application root is not a directory.");
       }
    }
 
-   public static void createResponderTemplate(String className, String rootDir, String endPoint){
+   public static void createResponderTemplate(String className, String rootDir, String endPoint, String[] exts){
       File root = new File(rootDir);
       System.out.println("adding responder");
       if(root.isDirectory()) {
-         templates.put(endPoint, new ResponderTemplate(className, root, endPoint));
+         templates.put(endPoint, new ResponderTemplate(className, root, endPoint, exts));
       } else System.out.println("Application root is not a directory.");
    }
 
@@ -88,9 +91,9 @@ public abstract class AbstractResponder
       if(templates.containsKey(endPoint)) {
          ResponderTemplate t = templates.get(endPoint);
          if(target.contains(endPoint)) {
-            return createResponder(t.className, t.root, t.endPoint);
-         } else return createResponder(t.className, t.root, t.endPoint).getRedirect(endPoint+target);
-      } else return createResponder("error", new File("."), "/error");
+            return createResponder(t.className, t.root, t.endPoint, t.fileExtensions);
+         } else return createResponder(t.className, t.root, t.endPoint, t.fileExtensions).getRedirect(endPoint+target);
+      } else return createResponder("error", new File("."), "/error", new String[]{"html"});
    }
 
    public static HashMap<String, String> getErrorResponse(HashMap<String, String> request){
@@ -147,6 +150,8 @@ public abstract class AbstractResponder
     **/
    protected String path;
 
+   protected String[] fileExtensions;
+
    private HashMap<String, String> response;
 
    private HashMap<String, String> errorResponse;
@@ -164,11 +169,12 @@ public abstract class AbstractResponder
     * @param r The application root directory, where this responder should look for resources.
     * @param ep The application endpoint.  This is the part of the url where this responder will start handling requests.
     **/
-   public AbstractResponder(File r, String ep)
+   public AbstractResponder(File r, String ep, String[] exts)
    {
       root = r;
       endPoint = ep;
       redirect = null;
+      fileExtensions = exts;
    }
 
    public boolean equals(String ep){

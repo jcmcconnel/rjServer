@@ -200,12 +200,12 @@ public class main {
                }
                break;
             case "add":
-               //add classname filesystem-root endpoint
-               if(cmdLine.split(" ").length == 4){
+               //add classname filesystem-root endpoint csv,file,Extensions
+               if(cmdLine.split(" ").length == 5){
                   if(cmdLine.split(" ")[3].startsWith("/")) {
-                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3]);
+                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], cmdLine.split(" ")[3], cmdLine.split(" ")[4].split(","));
                   } else {
-                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3]);
+                     AbstractResponder.createResponderTemplate(cmdLine.split(" ")[1], cmdLine.split(" ")[2], "/"+cmdLine.split(" ")[3], cmdLine.split(" ")[4].split(","));
                   }
                } else printHelp("add");
                break;
