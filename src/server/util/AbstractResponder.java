@@ -88,6 +88,7 @@ public abstract class AbstractResponder
          if(referer.split("/").length > 0) endPoint = "/"+referer.split("/")[1];
          else endPoint = referer;
       }
+      System.out.println("Redirect?: "+endPoint+target);
       if(templates.containsKey(endPoint)) {
          ResponderTemplate t = templates.get(endPoint);
          if(target.contains(endPoint)) {

@@ -289,6 +289,10 @@ public class Server implements Runnable
       if(((Thread)serverState.get("current-thread")).isAlive()) ((Thread)serverState.get("current-thread")).interrupt();
    }
 
+   public void detach(){
+      if(((Thread)serverState.get("current-thread")).isAlive()) ((Thread)serverState.get("current-thread")).setDaemon(true);
+   }
+
    public boolean isRunning(){
       if(serverState.containsKey("state")) return serverState.get("state").equals("running");
       else return false;

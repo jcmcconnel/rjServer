@@ -18,7 +18,7 @@ import server.util.AbstractResponder;
 /**
  *
  * Serves as a command line control program for the server itself.
- * Commands are available to start, stop, detach, add Responders/Applications/Modules or whatever you want to call them.
+ * Commands are available to start, stop, add Responders/Applications/Modules or whatever you want to call them.
  *
  **/
 public class main {
