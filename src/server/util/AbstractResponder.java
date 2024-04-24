@@ -78,22 +78,43 @@ public abstract class AbstractResponder
    
    public static AbstractResponder getResponder(HashMap<String, String> request) throws ReflectiveOperationException, FileNotFoundException {
       String referer = removeHostName(request.get("referer"));
-      System.out.println("Getting responder: "+request.get("request-line"));
       String target = request.get("request-line").split(" ")[1];
-      String endPoint;
+      System.out.println();
+      System.out.println("Getting responder: "+request.get("request-line"));
+      System.out.println("referer: "+referer);
+      System.out.println("target: "+target);
+      String endPoint = null;
       if(referer == null || referer.equals("")) {
+         System.out.println("Empty Referer");
          if(target.split("/").length > 0) endPoint = "/"+target.split("/")[1];
          else endPoint = target;
       } else {
-         if(referer.split("/").length > 0) endPoint = "/"+referer.split("/")[1];
-         else endPoint = referer;
+         //Problem: Where in the referrer is the endpoint when the endpoint may dangle off the address?  
+         //Ex: djava/recipes/style/default.css 
+         // End point is /recipes, not /djava and not /style
+         if(referer.split("/").length > 1) {
+            String[] pathComp = referer.split("/");
+            System.out.println("pathComp count: "+pathComp.length);
+            for(int i=0; i < pathComp.length; i++) {
+               System.out.println("Looking for: /"+pathComp[i]);
+               if(!pathComp[i].equals("") && templates.containsKey("/"+pathComp[i])) {
+                  endPoint = "/"+pathComp[i];
+                  break;
+               }
+            }
+            System.out.println("Determined EP:"+endPoint);
+            if(endPoint == null) return createResponder("error", new File("."), "/error", new String[]{"html"});
+         } else endPoint = referer;
       }
-      System.out.println("Redirect?: "+endPoint+target);
       if(templates.containsKey(endPoint)) {
          ResponderTemplate t = templates.get(endPoint);
          if(target.contains(endPoint)) {
+            System.out.println("target contains endpoint");
             return createResponder(t.className, t.root, t.endPoint, t.fileExtensions);
-         } else return createResponder(t.className, t.root, t.endPoint, t.fileExtensions).getRedirect(endPoint+target);
+         } else {
+            System.out.println("Redirecting to: "+endPoint+target);
+            return createResponder(t.className, t.root, t.endPoint, t.fileExtensions).getRedirect(endPoint+target);
+         }
       } else return createResponder("error", new File("."), "/error", new String[]{"html"});
    }
 
