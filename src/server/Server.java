@@ -286,7 +286,7 @@ public class Server implements Runnable
    public void stopServer() throws IOException {
       serverState.put("state", "stopped");
       msgOut.println("Stopping Server");
-      //((Thread)serverState.get("current-thread")).interrupt();
+      if(((Thread)serverState.get("current-thread")).isAlive()) ((Thread)serverState.get("current-thread")).interrupt();
    }
 
    public boolean isRunning(){

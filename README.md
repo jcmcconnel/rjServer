@@ -8,12 +8,13 @@ In the same spirit, you may find other things manually implemented as the primar
 
 The server has been tested behind both Nginx and Apache proxies, and seems to be responding stably.
 
-It is currently single threaded.
+It is currently using about 2 threads.
 
 Primary Features
 ----------------
   - Dynamic class loading for easily creating custom responders.
-  - Static html responder included: 'responder.StaticResponder'.
+  - Simple content responder included: 'responder.BasicResponder'.
+  - Responders can be given a list of file extensions for filtering.
   - Online help
   - Interactive mode
     - start/stop/restart the server and add/remove responders on the fly, etc.

@@ -216,9 +216,13 @@ public abstract class AbstractResponder
       String target = request.get("request-line").split(" ")[1];
 
       this.path = parsePath(target);
+      int extIndex = this.path.lastIndexOf(".");
+      String ext = "html";
+      if(extIndex > 0) ext = this.path.substring(extIndex+1);
 
       response.put("status-line","HTTP/1.0 200 OK");
-      response.put("Content-Type", "text/html; charset=utf-8");
+
+      response.put("Content-Type", "text/"+ext+"; charset=utf-8");
       response.put("Content-Length", "0");
 
       responseBody = getBody(target);

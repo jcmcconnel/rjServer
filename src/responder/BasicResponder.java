@@ -4,6 +4,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 
 public class BasicResponder extends server.util.AbstractResponder
 {
@@ -50,13 +52,26 @@ public class BasicResponder extends server.util.AbstractResponder
          if(resource.exists()) body = Files.readString(resource.toPath());
          else throw new server.util.ResponderException("Path: "+this.path+" does not exist");
          if(resource.getName().endsWith(".php")){
-            Process process = Runtime.getRuntime().exec(String.format("php -f"+resource.getAbsolutePath()));
-            InputStream input = process.getInputStream();
+            //Php is the problem, this code wasn't.  It's breaking because it doesn't like relative paths.
+            String cmd = String.format("php -f "+resource.getPath(), "DOCUMENT_ROOT="+this.root, this.root);
+            System.out.println(cmd);
+            Process process = Runtime.getRuntime().exec(cmd);
             StringBuilder sb = new StringBuilder();
-            for(int ch; (ch = input.read()) != -1; ) {
-               sb.append((char) ch);
+            try{
+               process.waitFor();
+               BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+               BufferedReader error = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+               String line = "";
+               String errLine = "";
+               while((line = input.readLine()) != null || (errLine = error.readLine()) != null ) {
+                  System.out.println(line);
+                  System.out.println("err: "+errLine);
+                  //sb.append(line);
+               }
+               //body = sb.toString();        
             }
-               body = sb.toString();        
+            catch(InterruptedException e){}
+            System.out.println(sb.toString());
          }
       }
       catch(IOException e) {
