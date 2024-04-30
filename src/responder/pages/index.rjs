@@ -4,16 +4,48 @@
     <title>Title for test</title>
   </head>
   <body>
-    <form action="" method="post" enctype="text/plain" class="form-example">
-      <div class="form-example">
-        <label for="email">Enter some text</label>
-        <textarea id="body" name="body" rows="10" cols="33" required >{num:"100" factor:"1.8+32" para:"$num"}</textarea>
-      </div>
-      <div class="form-example">
-        <input type="submit" value="Evaluate!" />
-      </div>
-    </form>
-    <echo/>
-    <output/>
+    <rjscript>
+      echo "this is some text";
+       echo "<div id='file'>";
+       echo "$param('id')";
+       //$handle = NULL;
+       //if(isset($_GET['id'])) {
+       //   // Directory traversal prevention
+       //   $filename = pathinfo($_GET['id'], PATHINFO_BASENAME);
+       //   $filename = str_replace("&", "", $filename);
+       //   $filename = str_replace("/", "", $filename);
+       //   $filename = str_replace("..", "", $filename);
+       //   $filename = str_replace("\\", "", $filename);
+       //   $filename = str_replace("|", "", $filename);
+       //   $filename = str_replace("\"", "", $filename);
+       //   //echo $filename;
+       //   if(
+       //      empty($filename) || 
+       //      !file_exists("docs/".$filename)
+       //   ){
+       //      $handle = popen("/usr/bin/pandoc docs/welcome.md", "r"); 
+       //      echo stream_get_contents($handle);
+       //      fclose($handle);
+       //   } else if(!substr_compare($filename, ".php", -4, 4, true)){
+       //      include "docs/".$filename;
+       //   }else{
+       //      if(!substr_compare($filename, ".html", -5, 5, true)){
+       //         //echo "HTML file ".substr($filename, -5).substr_compare($filename, ".html", -5) ; 
+       //         $handle = fopen("docs/".$filename, "r");
+       //      }else {
+       //         //echo "Not an HTML file";
+       //         if(!strpos($filename, " ")) $handle = popen("/usr/bin/pandoc docs/".$filename, "r");
+       //         else $handle = popen("/usr/bin/pandoc docs/\"".$filename."\"", "r");
+       //      }
+       //      echo stream_get_contents($handle);
+       //      fclose($handle);
+       //   }
+       //}else{
+       //   $handle = popen("/usr/bin/pandoc docs/welcome.md", "r"); 
+       //   echo stream_get_contents($handle);
+       //   fclose($handle);
+       //}
+       echo "</div>";
+    </rjscript>
   </body>
 </html>

@@ -180,7 +180,7 @@ public abstract class AbstractResponder
 
    protected HashMap<String, String> request;
 
-   protected ArrayList<String> currentParameters;
+   protected HashMap<String, String> currentParameters;
    protected String currentHashId;
 
    private String redirect;
@@ -347,22 +347,22 @@ public abstract class AbstractResponder
       return returnValue;
    }
 
-   protected ArrayList<String> parseParameters(StringReader in) throws IOException {
-      ArrayList<String> parameters = new ArrayList<String>();
+   protected HashMap<String, String> parseParameters(StringReader in) throws IOException {
+      HashMap<String, String> parameters = new HashMap<String, String>();
       String temp = "";
       while(in.ready()){
          int c = in.read();
          if(c == -1) {
-            parameters.add(temp);
+            if(temp.contains("=")) parameters.put(temp.split("=")[0], temp.split("=")[1]);
             temp = "";
             break;
          }
          if(c == '&' || c == ';'){
-            parameters.add(temp);
+            if(temp.contains("=")) parameters.put(temp.split("=")[0], temp.split("=")[1]);
             temp = "";
          } else temp = temp + (char)c;
       }
-      if(!temp.isEmpty()) parameters.add(temp);
+      if(!temp.isEmpty() && temp.contains("=")) parameters.put(temp.split("=")[0], temp.split("=")[1]);
       return parameters;
    }
    

@@ -5,6 +5,7 @@ src/server/util/ResponderException.java
 src/server/util/XHTMLElement.java
 
 src/responder/BasicResponder.java
+src/responder/RJScriptResponder.java
 src/responder/ApplicationResponder.java
 
 src/server/Server.java
