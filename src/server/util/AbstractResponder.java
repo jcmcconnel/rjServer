@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.URLClassLoader;
 import java.lang.reflect.Constructor;
+import java.nio.file.Files;
 
 public abstract class AbstractResponder
 {
@@ -32,8 +33,8 @@ public abstract class AbstractResponder
    private static HashMap<String, ResponderTemplate> templates = new HashMap<String, ResponderTemplate>();
    private static HashMap<String, server.util.AbstractResponder> responders = new HashMap<String, AbstractResponder>();
    private static AbstractResponder errorResponder = new AbstractResponder(new File("."), "error", new String[]{"html", "htm"}) {
-      protected String getBody(String target){
-         return getDefaultErrorBody(this.request);
+      protected byte[] getBody(String target){
+         return getDefaultErrorBody(this.request).getBytes();
       }
    };
    private static URLClassLoader responderLoader;
@@ -41,8 +42,8 @@ public abstract class AbstractResponder
    private static AbstractResponder createResponder(String className, File rootDir, String endPoint, String[] exts) throws ReflectiveOperationException, FileNotFoundException {
       if(className.equals("error")){
          return new AbstractResponder(new File("."), "/error", new String[]{"html", "htm"}) {
-            protected String getBody(String target){
-               return getDefaultErrorBody(this.request);
+            protected byte[] getBody(String target){
+               return getDefaultErrorBody(this.request).getBytes();
             }
          };
       } else {
@@ -120,15 +121,15 @@ public abstract class AbstractResponder
 
    public static HashMap<String, String> getErrorResponse(HashMap<String, String> request){
       HashMap<String, String> response = new HashMap<String, String>();
-      String responseBody = "";
+      byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getDefaultErrorBody(request);
-      response.put("Content-Length", String.valueOf(responseBody.length()));
-      response.put("body", responseBody);
+      responseBody = getDefaultErrorBody(request).getBytes();
+      response.put("Content-Length", String.valueOf(responseBody.length));
+      response.put("body", new String(responseBody));
       return response;
    }
 
@@ -174,6 +175,8 @@ public abstract class AbstractResponder
 
    protected String[] fileExtensions;
 
+   protected String fileType;
+
    private HashMap<String, String> response;
 
    private HashMap<String, String> errorResponse;
@@ -197,6 +200,7 @@ public abstract class AbstractResponder
       endPoint = ep;
       redirect = null;
       fileExtensions = exts;
+      fileType = null;
    }
 
    public boolean equals(String ep){
@@ -234,7 +238,7 @@ public abstract class AbstractResponder
 
    private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {
       HashMap<String, String> response = new HashMap<String, String>();
-      String responseBody = "";
+      byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
       this.path = parsePath(target);
@@ -244,18 +248,19 @@ public abstract class AbstractResponder
 
       response.put("status-line","HTTP/1.0 200 OK");
 
-      response.put("Content-Type", "text/"+ext+"; charset=utf-8");
+      if(fileType != null && fileType.equals("jpg")) response.put("Content-Type", "image/"+ext+";");
+      else response.put("Content-Type", "text/"+ext+"; charset=utf-8");
       response.put("Content-Length", "0");
 
       responseBody = getBody(target);
-      response.put("Content-Length", String.valueOf(responseBody.length()));
-      response.put("body", responseBody);
+      response.put("Content-Length", String.valueOf(responseBody.length));
+      response.put("body", new String(responseBody));
       return response;
    }
 
    private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderException {
       HashMap<String, String> response = new HashMap<String, String>();
-      String responseBody = "";
+      byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
       this.path = parsePath(target);
@@ -265,8 +270,8 @@ public abstract class AbstractResponder
       response.put("Content-Length", "0");
 
       responseBody = getBody(target);
-      response.put("Content-Length", String.valueOf(responseBody.length()));
-      response.put("body", responseBody);
+      response.put("Content-Length", String.valueOf(responseBody.length));
+      response.put("body", new String(responseBody));
       return response;
    }
 
@@ -276,7 +281,7 @@ public abstract class AbstractResponder
 
    protected HashMap<String, String> ERRORResponse(HashMap<String, String> request, String errMsg){
       HashMap<String, String> response = new HashMap<String, String>();
-      String responseBody = "";
+      byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
       this.path = parsePath(target);
@@ -284,9 +289,9 @@ public abstract class AbstractResponder
       response.put("status-line","HTTP/1.0 404 NOT FOUND");
       response.put("Content-Type", "text/html; charset=utf-8");
 
-      responseBody = getErrorBody();
-      response.put("Content-Length", String.valueOf(responseBody.length()));
-      response.put("body", responseBody);
+      responseBody = getErrorBody().getBytes();
+      response.put("Content-Length", String.valueOf(responseBody.length));
+      response.put("body", new String(responseBody));
       return response;
    }
 
@@ -325,13 +330,27 @@ public abstract class AbstractResponder
                break;
             } else temp = temp+(char)c;
          }
-         if(!temp.isEmpty()) pathComponents.add(temp);
+         if(!temp.isEmpty()){
+            pathComponents.add(temp);
+         }
       }
       catch(IOException e) {
          System.out.println(e);
          return "";
       }
-      return String.join("/", pathComponents);
+      String output = String.join("/", pathComponents);
+      int pathExtIndex = output.lastIndexOf(".");
+      if(pathExtIndex > 0) {
+         String ext = output.substring(pathExtIndex+1);
+         for(int i=0; i<fileExtensions.length; i++){
+            if(ext.equals(fileExtensions[i])){
+               fileType = output.substring(pathExtIndex+1);
+               break;
+            }
+         }
+      }
+
+      return output;
    }
 
    protected String parseIdentifier(StringReader in) throws IOException {
@@ -366,7 +385,48 @@ public abstract class AbstractResponder
       return parameters;
    }
    
-   protected abstract String getBody(String target) throws ResponderException;
+   /**
+    * Most responders will have some resource that they want to collect and utilize this handles the getting and input checking part.
+    * @param target The request-line path part
+    * @return The bytes of the resource
+    *
+    * */
+   protected byte[] getResource(String target) throws ResponderException {
+      File resource;
+      if(fileType != null) {
+         resource = new File(this.root+this.path);
+      } else {
+         resource = new File(this.root+"/index."+this.fileExtensions[1]);
+         if(this.path == null || this.path.equals("") || this.path.equals("/")){
+            for(int i=0; i<this.fileExtensions.length; i++){
+               resource = new File(this.root+"/index."+this.fileExtensions[i]);
+               if(resource.exists()) break;
+            }
+         } else {
+            resource = new File(this.root+this.path+"/index."+this.fileExtensions[1]);
+            for(int i=0; i<this.fileExtensions.length; i++){
+               resource = new File(this.root+this.path+"/index."+this.fileExtensions[i]);
+               if(resource.exists()) break;
+            }
+         }
+      }
+      System.out.println("EP:"+this.getEndPoint());
+      System.out.println("root:"+this.root);
+      System.out.println("path:"+this.path);
+      System.out.println("resource:"+resource.toString());
+
+      try {
+         if(resource.exists()){
+            return Files.readAllBytes(resource.toPath());
+         } else throw new server.util.ResponderException("Resource: "+this.path+" does not exist");
+      }
+      catch(IOException e) {
+         System.out.println(e);
+         throw new server.util.ResponderException("IOException in getResource: "+e.toString());
+      }
+   }
+
+   protected abstract byte[] getBody(String target) throws ResponderException;
 
    /**
     * Override this method for a custom message

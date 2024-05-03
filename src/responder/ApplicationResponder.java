@@ -47,10 +47,10 @@ public class ApplicationResponder extends server.util.AbstractResponder
       localVariables = new HashMap<String, String>();
    }
 
-   protected String getBody(String target) throws server.util.ResponderException
+   protected byte[] getBody(String target) throws server.util.ResponderException
    {
       System.out.println("Application responder EP:"+this.getEndPoint());
-      return template.toString();
+      return template.toString().getBytes();
    }
 
     protected String parseRequestBody(){

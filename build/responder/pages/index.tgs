@@ -4,7 +4,7 @@
     <title>Title for test</title>
   </head>
   <body>
-    <rjscript>
+    <tgscript>
       echo "this is some text";
        echo "<div id='file'>";
        echo "$param('id')";
@@ -46,6 +46,6 @@
        //   fclose($handle);
        //}
        echo "</div>";
-    </rjscript>
+    </tgscript>
   </body>
 </html>

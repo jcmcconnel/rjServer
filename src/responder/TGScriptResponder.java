@@ -1,7 +1,6 @@
 package responder;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -26,40 +25,20 @@ public class TGScriptResponder extends server.util.AbstractResponder
    /**
     *
     **/
-   protected String getBody(String target) throws server.util.ResponderException
+   protected byte[] getBody(String target) throws server.util.ResponderException
    {
-      String body = "";
-      File resource = new File(this.root+"/index."+this.fileExtensions[1]);
-      if(this.path == null || this.path.equals("") || this.path.equals("/")){
-         for(int i=0; i<this.fileExtensions.length; i++){
-            resource = new File(this.root+"/index."+this.fileExtensions[i]);
-            if(resource.exists()) break;
-         }
-      } else {
-         int pathExtIndex = this.path.lastIndexOf(".");
-         String pathExt = "";
-         if(pathExtIndex > 0) pathExt = this.path.substring(pathExtIndex);
-         System.out.println("Ext: "+pathExt);
-         resource = new File(this.root+this.path);
-         for(int i=0; i<this.fileExtensions.length; i++){
-            if(pathExtIndex > 0){
-               if(pathExt.equals(this.fileExtensions[i])) break;
-            } else {
-               resource = new File(this.root+this.path+"/index."+this.fileExtensions[i]);
-               if(resource.exists()) break;
-            }
-         }
-      }
-
+      byte[] bodyBytes = super.getResource(target);
+      if(super.fileType != null && super.fileType.equals("jpg")) return bodyBytes;
+      String body = new String(bodyBytes);
       try {
-         if(resource.exists()) body = Files.readString(resource.toPath());
-         else throw new server.util.ResponderException("Path: "+this.path+" does not exist");
+         System.out.println("Filetype: "+super.fileType);
          body = parse(body);
       }
       catch(IOException e) {
+         System.out.println("TGScript getbody");
          System.out.println(e);
       }
-      return body+"\n";
+      return (body+"\n").getBytes();
    }
 
    private String processTGScript(String body) throws IOException {
