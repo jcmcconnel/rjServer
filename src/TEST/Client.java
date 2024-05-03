@@ -1,4 +1,6 @@
 // A Java program for a Client
+package TEST;
+
 import java.io.*;
 import java.net.*;
 import java.util.Scanner;

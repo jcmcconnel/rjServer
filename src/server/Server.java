@@ -18,107 +18,13 @@ import java.util.Set;
 
 
 /**
- * Notes: Move toward ServerSocketChannel/SocketChannel non-blocking implementation.
+ * Notes:
  *   - Non-blocking input would allow for multiple connections, Asynchronous only means that the socket operation is disconnected from the parent process.
  *     This will require a list of open client-connections along with their partial request contents
  **/
 
 public class Server implements Runnable
 {
-   private class Client {
-      public InetSocketAddress remote;
-      public long startTime;
-      public ByteBuffer buffer;
-      public StringBuilder rawRequest;
-      public HashMap<String, String> request;
-      public HashMap<String, String> response;
-      public boolean readyToWrite = false;
-
-      public ServerSocketChannel server;
-      public SocketChannel client;
-
-      public boolean isDead = false;
-
-      public Client(InetSocketAddress r, long t, ServerSocketChannel s, SocketChannel c){
-         remote = r;
-         startTime = t;
-         rawRequest = new StringBuilder();
-         request = new HashMap<String, String>();
-         server = s;
-         client = c;
-      }
-
-      /**
-       * Closes things associated with this client.
-       **/
-      public void close() throws IOException {
-         client.close();
-         //server.close();
-         isDead = true;
-      }
-
-      /**
-       * Returns true, if the end of input is reached.
-       **/
-      public boolean processBuffer(){
-         msgOut.println("Process buffer");
-         buffer.rewind();
-         for(int i=0; i<buffer.array().length; i++){
-            byte b = buffer.get();
-            //msgOut.print((char)b);
-            rawRequest.append((char)b);
-            if(b == '\0') {
-               msgOut.println("EOF found: "+(char)b+i);
-               msgOut.println(rawRequest.toString());
-               rawRequest.trimToSize();
-               readInRequest();
-               readyToWrite = true;
-               return true;
-            }
-         }
-         return false;
-      }
-
-      private void readInRequest() {
-         Scanner scanner = new Scanner(rawRequest.toString());
-         while(scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            if(line.equals("")) break;
-            if(line.contains(":")){
-               String key = line.split(":")[0].trim().toLowerCase();
-               this.request.put(key, line.substring(line.indexOf(':')+1).trim());
-            } else request.put("request-line", line);
-         }
-         if(this.request.containsKey("content-length")) {
-            StringBuilder s = new StringBuilder();
-            while(s.toString().length() < Integer.parseInt(this.request.get("content-length"))) {
-               String line = scanner.nextLine();
-               s.append(line);
-            }
-            this.request.put("body", s.toString());
-         }
-      }
-
-      private String getRawResponse() {
-         ByteArrayOutputStream output = new ByteArrayOutputStream();
-         PrintWriter out = new PrintWriter(output);
-         out.println(response.get("status-line"));
-         //msgOut.println(response.get("status-line"));
-         Iterator i = response.keySet().iterator();
-         while(i.hasNext()){
-            String key = (String)i.next();
-            if(!key.equals("status-line") && !key.equals("body")&&!key.equals("Content-Length")){
-               out.println(key+": "+response.get(key));
-               //msgOut.println(key+": "+response.get(key));
-            }
-         }
-         out.println("Content-Length: "+response.get("Content-Length"));
-         out.print("\n");
-         out.print(response.get("body"));
-         out.flush();
-         return output.toString();
-      }
-   }
 
    private Socket socket;
 
@@ -130,9 +36,9 @@ public class Server implements Runnable
    private HashMap<String, Object> serverState;
 
    private StringWriter messages;
-   private PrintWriter msgOut;
+   protected PrintWriter msgOut;
 
-   private ArrayList<Client> activeConnections;
+   private ArrayList<ConnectedClient> activeConnections;
 
    
    public Server()
@@ -148,7 +54,7 @@ public class Server implements Runnable
 
       serverState = new HashMap<String, Object>();
 
-      activeConnections = new ArrayList<Client>();
+      activeConnections = new ArrayList<ConnectedClient>();
 
    }
 
@@ -196,15 +102,15 @@ public class Server implements Runnable
                      clientChannel.configureBlocking(false);
                      clientChannel.register(selector, SelectionKey.OP_READ|SelectionKey.OP_WRITE);
 
-                     activeConnections.add(new Client((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis(), serverChannel, clientChannel));
+                     activeConnections.add(new ConnectedClient((InetSocketAddress)clientChannel.getRemoteAddress(), System.currentTimeMillis(), serverChannel, clientChannel));
                      keyIterator.remove();
                      continue;
                   }
                   SocketChannel client = (SocketChannel) key.channel();
-                  Client connectedClient = null;
+                  ConnectedClient connectedClient = null;
                   Iterator i = activeConnections.iterator();
                   while(i.hasNext()){
-                     Client c = (Client)i.next();
+                     ConnectedClient c = (ConnectedClient)i.next();
                      if(c.isDead) i.remove();
                      if(c.remote.equals(client.getRemoteAddress())){
                         connectedClient = c;
@@ -257,7 +163,7 @@ public class Server implements Runnable
             }
             msgOut.println("Closing channel");
             selector.close();
-            Iterator<Client> iter = activeConnections.iterator();
+            Iterator<ConnectedClient> iter = activeConnections.iterator();
             while(iter.hasNext()) {
                iter.next().close();
                iter.remove();

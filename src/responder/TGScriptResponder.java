@@ -15,17 +15,16 @@ import java.lang.*;
 
 import server.util.AbstractXHTMLBasedFile;
 
-public class RJScriptResponder extends server.util.AbstractResponder
+public class TGScriptResponder extends server.util.AbstractResponder
 {
 
-   public RJScriptResponder(File root, String ep, String[] exts)
+   public TGScriptResponder(File root, String ep, String[] exts)
    {
       super(root, ep, exts);
    }
 
    /**
     *
-    * TODO: Check for things like php and allow for system calls.
     **/
    protected String getBody(String target) throws server.util.ResponderException
    {
@@ -51,10 +50,6 @@ public class RJScriptResponder extends server.util.AbstractResponder
             }
          }
       }
-      System.out.println("Static Responder EP:"+this.getEndPoint());
-      System.out.println("Static Responder root:"+this.root);
-      System.out.println("Static Responder path:"+this.path);
-      System.out.println("Static Responder resource:"+resource.toString());
 
       try {
          if(resource.exists()) body = Files.readString(resource.toPath());
@@ -67,7 +62,7 @@ public class RJScriptResponder extends server.util.AbstractResponder
       return body+"\n";
    }
 
-   private String processRJScript(String body){
+   private String processTGScript(String body) throws IOException {
       Scanner in = new Scanner(body);
       StringBuilder out = new StringBuilder();
       while(in.hasNextLine()){
@@ -81,13 +76,23 @@ public class RJScriptResponder extends server.util.AbstractResponder
                start = content.indexOf("$param(")+8;
                end = content.indexOf("\')", start);
                String key = content.substring(start, end);
-               if(currentParameters.containsKey(key)) out.append(currentParameters.get(key));
+               if(currentParameters.containsKey(key)) {
+                  ProcessBuilder pb = new ProcessBuilder("pandoc", "docs/"+currentParameters.get(key));
+                  pb.directory(this.root);
+                  InputStream r = pb.start().getInputStream();
+                  int c = r.read();
+                  while(c != -1){
+                     out.append((char)c);
+                     c = r.read();
+                  }
+               }
             } else out.append(content);
          } else out.append(line);
       }
 
       return out.toString();
    }
+
    private String parse(String body) throws IOException {
       StringReader in = new StringReader(body);
       StringBuilder out = new StringBuilder();
@@ -117,7 +122,7 @@ public class RJScriptResponder extends server.util.AbstractResponder
                   if (!e.isSelfClosing()) {
                      String content = parseForContentAsText(e.getName(), in);
                      //what do I do with the tag, once I have it?
-                     if(e.getName().equals("rjscript")) out.append(processRJScript(content));
+                     if(e.getName().equals("tgscript")) out.append(processTGScript(content));
                      else {
                         e.setContent(parse(content));
                         out.append(e.toString());
