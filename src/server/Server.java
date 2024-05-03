@@ -154,7 +154,7 @@ public class Server implements Runnable
 
                      String output = connectedClient.getRawResponse();
                      msgOut.println("Ready to write: "+connectedClient.remote.toString());
-                     client.write(ByteBuffer.allocate(output.length()).wrap(output.getBytes()));
+                     connectedClient.client.write(ByteBuffer.allocate(output.length()).wrap(output.getBytes()));
                      connectedClient.close();
                      keyIterator.remove();
                      continue;
