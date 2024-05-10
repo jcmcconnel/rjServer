@@ -27,8 +27,12 @@ public class TGScriptResponder extends server.util.AbstractResponder
     **/
    protected byte[] getBody(String target) throws server.util.ResponderException
    {
+      System.out.println("tgscript getbody top: "+target);
       byte[] bodyBytes = super.getResource(target);
-      if(super.fileType != null && super.fileType.equals("jpg")) return bodyBytes;
+      if(super.fileType != null && super.fileType.equals("jpg")) {
+         System.out.println("returning image data: "+bodyBytes.length);
+         return bodyBytes;
+      }
       String body = new String(bodyBytes);
       try {
          System.out.println("Filetype: "+super.fileType);

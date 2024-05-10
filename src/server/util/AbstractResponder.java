@@ -119,8 +119,8 @@ public abstract class AbstractResponder
       } else return createResponder("error", new File("."), "/error", new String[]{"html"});
    }
 
-   public static HashMap<String, String> getErrorResponse(HashMap<String, String> request){
-      HashMap<String, String> response = new HashMap<String, String>();
+   public static HashMap<String, Object> getErrorResponse(HashMap<String, String> request){
+      HashMap<String, Object> response = new HashMap<String, Object>();
       byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
@@ -177,9 +177,9 @@ public abstract class AbstractResponder
 
    protected String fileType;
 
-   private HashMap<String, String> response;
+   private HashMap<String, Object> response;
 
-   private HashMap<String, String> errorResponse;
+   private HashMap<String, Object> errorResponse;
 
    protected HashMap<String, String> request;
 
@@ -210,9 +210,9 @@ public abstract class AbstractResponder
       return this.endPoint;
    }
 
-   public HashMap<String, String> getResponse(HashMap<String, String> request){
+   public HashMap<String, Object> getResponse(HashMap<String, String> request){
       if(redirect != null){
-         HashMap<String, String> response = new HashMap<String, String>();
+         HashMap<String, Object> response = new HashMap<String, Object>();
 
          response.put("status-line","HTTP/1.0 301 Moved Permanently");
          response.put("Location", redirect);
@@ -236,8 +236,8 @@ public abstract class AbstractResponder
       }
    }
 
-   private HashMap<String, String> GETResponse(HashMap<String, String> request) throws ResponderException {
-      HashMap<String, String> response = new HashMap<String, String>();
+   private HashMap<String, Object> GETResponse(HashMap<String, String> request) throws ResponderException {
+      HashMap<String, Object> response = new HashMap<String, Object>();
       byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
@@ -254,12 +254,12 @@ public abstract class AbstractResponder
 
       responseBody = getBody(target);
       response.put("Content-Length", String.valueOf(responseBody.length));
-      response.put("body", new String(responseBody));
+      response.put("body", responseBody);
       return response;
    }
 
-   private HashMap<String, String> POSTResponse(HashMap<String, String> request) throws ResponderException {
-      HashMap<String, String> response = new HashMap<String, String>();
+   private HashMap<String, Object> POSTResponse(HashMap<String, String> request) throws ResponderException {
+      HashMap<String, Object> response = new HashMap<String, Object>();
       byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 
@@ -275,12 +275,12 @@ public abstract class AbstractResponder
       return response;
    }
 
-   private HashMap<String, String> PUTResponse(HashMap<String, String> request) throws ResponderException {
+   private HashMap<String, Object> PUTResponse(HashMap<String, String> request) throws ResponderException {
       return ERRORResponse(request, "PUT Requests not supported");
    }
 
-   protected HashMap<String, String> ERRORResponse(HashMap<String, String> request, String errMsg){
-      HashMap<String, String> response = new HashMap<String, String>();
+   protected HashMap<String, Object> ERRORResponse(HashMap<String, String> request, String errMsg){
+      HashMap<String, Object> response = new HashMap<String, Object>();
       byte[] responseBody = null;
       String target = request.get("request-line").split(" ")[1];
 

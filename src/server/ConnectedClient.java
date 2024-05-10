@@ -23,7 +23,7 @@ class ConnectedClient {
    public ByteBuffer buffer;
    public StringBuilder rawRequest;
    public HashMap<String, String> request;
-   public HashMap<String, String> response;
+   public HashMap<String, Object> response;
    public boolean readyToWrite = false;
 
    public ServerSocketChannel server;
@@ -45,7 +45,6 @@ class ConnectedClient {
       **/
    public void close() throws IOException {
       client.close();
-      //server.close();
       isDead = true;
    }
 
@@ -87,7 +86,7 @@ class ConnectedClient {
       }
    }
 
-   protected String getRawResponse() {
+   public void write() throws IOException {
       ByteArrayOutputStream output = new ByteArrayOutputStream();
       PrintWriter out = new PrintWriter(output);
       out.println(response.get("status-line"));
@@ -100,8 +99,19 @@ class ConnectedClient {
       }
       out.println("Content-Length: "+response.get("Content-Length"));
       out.print("\n");
-      out.print(response.get("body"));
-      out.flush();
-      return output.toString();
+      System.out.println("Content-Type: "+response.get("Content-Type"));
+      System.out.println(response.get("body").getClass().toString());
+      if(response.get("Content-Type").equals("image/jpg;")){
+         System.out.println("Writing image data");
+         out.flush();
+         client.write(ByteBuffer.allocate(output.size()).wrap(output.toByteArray()));
+         client.write(ByteBuffer.allocate(((byte[])response.get("body")).length).wrap((byte[])response.get("body")));
+      } else {
+         out.print(new String((byte[])response.get("body")));
+         out.flush();
+         client.write(ByteBuffer.allocate(output.size()).wrap(output.toByteArray()));
+      }
    }
+
 }
+

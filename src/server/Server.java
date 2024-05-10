@@ -152,11 +152,13 @@ public class Server implements Runnable
                         continue;
                      }
 
-                     String output = connectedClient.getRawResponse();
-                     msgOut.println("Ready to write: "+connectedClient.remote.toString());
-                     connectedClient.client.write(ByteBuffer.allocate(output.length()).wrap(output.getBytes()));
-                     connectedClient.close();
-                     keyIterator.remove();
+                     System.out.println("Starting write");
+                     connectedClient.write();
+                     //if(connectedClient.finishedWrite() {
+                        connectedClient.close();
+                        keyIterator.remove();
+                     //}
+                     System.out.println("finished write");
                      continue;
                   }
                }
