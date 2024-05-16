@@ -1,0 +1,2 @@
+String s = "hello world";
+if(true) print s;
