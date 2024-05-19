@@ -39,6 +39,15 @@ Development Goals
   - [-] Make it multi-threaded for additional capacity.
     - *In Progress:* Here's an interesting question: What makes multi-threading better?  According to my research, using additional threads only improves client load handling by an order of magnitude. Apparently the preferred method is to use SocketChannels and looping to accept client connection requests, read, and write depending on the state of the saved connection.  This allows a single thread to handle massively greater connection volumes than multi-threading, while at the same time keeping the free threads available for the heavy lifting of request processing.  i.e.: One thread handles connection management, additional threads can be used for data processing.
 
+In Progress
+===========
+I am prototyping an interpreter for a scripting language for one of the responders.  Currently very alpha.
+It's in the test package and a test case can be run with the following command:
+
+```
+java src/TEST/TGScriptParser.java src/TEST/test.tgs
+```
+
 Acknowledgments
 ======
   - Chicken Wings patch is live! Thanks to @AggieNateHarris

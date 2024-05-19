@@ -4,6 +4,7 @@ import java.io.*;
 import java.util.*;
 public class TGScriptParser {
 
+   private static HashMap<String, String> tokens = new HashMap<String, String>();
    private static HashMap<String, HashMap<String, Object>> context = new HashMap<String, HashMap<String, Object>>();
 
    public static void main(String args[]) {
@@ -13,6 +14,8 @@ public class TGScriptParser {
          File inFile = new File(args[0]);
          if(inFile.exists()) {
             try{
+              tokens.put("string", "variable");
+              tokens.put("if", "branch");
               parse(new FileInputStream(inFile));
             } 
             catch(IOException e){
@@ -24,41 +27,117 @@ public class TGScriptParser {
 
    private static void parse(InputStream in) throws IOException {
       int c;
-      String[] tokens = {"if", "String"};
       String buffer = new String();
       while(in.available() > 0){
          c = in.read();
          if(c != '\n' && c != ' ') buffer += (char)c;
-         if(buffer.trim().equals("if")){
-            if(parseIfCondition(in)){
-               parseBody(in);
+         if(tokens.containsKey(buffer.trim().toLowerCase())) {
+            System.out.println("found token: "+buffer);
+            if(tokens.get(buffer.trim().toLowerCase()).equals("branch")){
+               System.out.println("parsing for branch");
+               while(in.available() > 0){
+                  c = in.read();
+                  if(c == '\n' || c == ' ') continue; 
+                  if(c == '(') {
+                     break;
+                  } else throw new IOException("'(' Expected");
+               }
+
+               if(parseCondition(in)){
+                  parseBody(in);
+               }
+               //Parse body
+               //Parse for else
+               buffer = "";
+            } else if(tokens.get(buffer.trim().toLowerCase()).equals("variable")){
+               System.out.println("parsing for variable");
+               parseVarDeclaration(buffer.trim().toLowerCase(), in);
+               buffer = "";
             }
-            //Parse body
-            //Parse for else
-            buffer = "";
-         } else if(buffer.equals("String")){
-            parseVarDeclaration("String", in);
-            buffer = "";
          }
       }
    }
 
-   private static boolean parseIfCondition(InputStream in) throws IOException {
+   private static boolean parseCondition(InputStream in) throws IOException {
       int c;
-      int parenthesisStack = 0;
-      String content = new String();
+      String content = "";
       while(in.available() > 0){
          c = in.read();
          if(c == '(') {
-            parenthesisStack++;
+            if(parseCondition(in)) content += "true";
+            else content += "false";
          } else if(c == ')'){
-            parenthesisStack--;
+            return parseLogicStatement(new Scanner(content));
          } else content += (char)c;
-         if(parenthesisStack == 0 && !content.isEmpty()) {
-            if(content.equals("true")) return true;
-         } 
+
       }
       return false;
+   }
+
+   private static boolean parseLogicStatement(Scanner in) throws IOException {
+      Object contextVal = null;
+      String op = null;
+      Object compVal = null;
+      while(in.hasNext()){
+         String next = in.next().trim().toLowerCase();
+
+         if(contextVal != null) { 
+            if(next.equals("||")) {
+               if(contextVal.equals("true")) return true;
+               else return parseLogicStatement(in);
+            }
+            if(next.equals("&&")) {
+               if(contextVal.equals("true")) return parseLogicStatement(in);
+               else return false;
+            }
+         }
+
+         if(contextVal == null && context.containsKey(next)) {
+            contextVal = context.get(next).get("value"); 
+            continue;
+         } 
+         if(contextVal == null) {
+            contextVal = next;
+            continue;
+         }
+         if(contextVal != null) {
+            op = next;
+            continue;
+         }
+
+         if(op != null && context.containsKey(next)){
+            compVal = context.get(next).get("value");
+            break;
+         }
+         if(op != null) {
+            compVal = next;
+            contextVal = evaluateLogicStatement(contextVal, op, compVal);
+            op = null;
+            compVal = null;
+         }
+      }
+      if(contextVal != null && contextVal.equals("true")) return true;
+      else return false;
+   }
+
+   private static String evaluateLogicStatement(Object field, String operator, Object value) {
+      switch(operator){
+         case "==":
+            return (new Boolean(field.equals(value))).toString();
+         case "!=":
+            return (new Boolean(!field.equals(value))).toString();
+      }
+      return "false";
+
+      //   case ">=":
+      //      return field.equals(value).toString();
+      //   case "<=":
+      //      return field.equals(value).toString();
+      //   case ">":
+      //      return field.equals(value).toString();
+      //   case "<":
+      //      return field.equals(value).toString();
+      //}
    }
 
    private static void parseVarDeclaration(String dataType, InputStream in) throws IOException {
@@ -73,7 +152,11 @@ public class TGScriptParser {
             content = "";
          } else if(c == ';'){
             varDef.put("type", dataType);
-            varDef.put("value", content);
+            if(dataType.equals("string")) {
+               int start = content.indexOf("\"")+1;
+               int end = content.lastIndexOf("\"");
+               varDef.put("value", content.substring(start, end));
+            } else varDef.put("value", content);
             context.put(varName, varDef);
             return;
          } else content += (char)c;
