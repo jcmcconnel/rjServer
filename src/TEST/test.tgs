@@ -1,2 +1,4 @@
 String s = "hello world";
-if(true) print s;
+String r = "test";
+if(r == "not test") print r;
+else print s;

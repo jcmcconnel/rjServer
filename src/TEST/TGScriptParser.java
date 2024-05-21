@@ -7,6 +7,8 @@ public class TGScriptParser {
    private static HashMap<String, String> tokens = new HashMap<String, String>();
    private static HashMap<String, HashMap<String, Object>> context = new HashMap<String, HashMap<String, Object>>();
 
+   private static HashMap<String, String> commands = new HashMap<String, String>();
+
    public static void main(String args[]) {
       if(args.length == 0) {
          System.out.println("Usage: [OPTIONS] [FILE]");
@@ -16,6 +18,8 @@ public class TGScriptParser {
             try{
               tokens.put("string", "variable");
               tokens.put("if", "branch");
+
+              commands.put("print", "");
               parse(new FileInputStream(inFile));
             } 
             catch(IOException e){
@@ -32,9 +36,9 @@ public class TGScriptParser {
          c = in.read();
          if(c != '\n' && c != ' ') buffer += (char)c;
          if(tokens.containsKey(buffer.trim().toLowerCase())) {
-            System.out.println("found token: "+buffer);
+            //System.out.println("found token: "+buffer);
             if(tokens.get(buffer.trim().toLowerCase()).equals("branch")){
-               System.out.println("parsing for branch");
+               //System.out.println("parsing for branch");
                while(in.available() > 0){
                   c = in.read();
                   if(c == '\n' || c == ' ') continue; 
@@ -45,12 +49,38 @@ public class TGScriptParser {
 
                if(parseCondition(in)){
                   parseBody(in);
+               } else {
+                  //System.out.println("Looking for else");
+                  //Reject next command/block
+                  //If followed by else parseBody it.
+                  while(in.available() > 0){
+                     c = in.read();
+                     if(c == '{') {
+                        int bracketStack = 1;
+                        while(in.available() > 0){
+                           c = in.read();
+                           if(c == '{') bracketStack++;
+                           else if(c == '}') bracketStack--;
+                           if(bracketStack == 0) break;
+                        }
+                     } else if(c == ';') break;
+                  }
+                  buffer = "";
+                  while(in.available() > 0 && buffer.length() < 5){
+                     c = in.read();
+                     if(c != '\n' && c != ' ') buffer += (char)c;
+                     if(buffer.length() == 4 && buffer.equals("else")){
+                        parseBody(in);
+                        buffer = "";
+                     }
+                  }
+
                }
                //Parse body
                //Parse for else
                buffer = "";
             } else if(tokens.get(buffer.trim().toLowerCase()).equals("variable")){
-               System.out.println("parsing for variable");
+               //System.out.println("parsing for variable");
                parseVarDeclaration(buffer.trim().toLowerCase(), in);
                buffer = "";
             }
@@ -80,6 +110,8 @@ public class TGScriptParser {
       Object compVal = null;
       while(in.hasNext()){
          String next = in.next().trim().toLowerCase();
+         if(next.indexOf('"') == 0) while(next.lastIndexOf('"') < next.length()-1) next += " "+in.next();
+         //System.out.println(next);
 
          if(contextVal != null) { 
             if(next.equals("||")) {
@@ -94,23 +126,27 @@ public class TGScriptParser {
 
          if(contextVal == null && context.containsKey(next)) {
             contextVal = context.get(next).get("value"); 
+            //System.out.println("contextVal: "+contextVal);
             continue;
          } 
          if(contextVal == null) {
             contextVal = next;
             continue;
          }
-         if(contextVal != null) {
+         if(contextVal != null && op == null) {
             op = next;
+            //System.out.println("op: "+op);
             continue;
          }
 
          if(op != null && context.containsKey(next)){
             compVal = context.get(next).get("value");
-            break;
+            continue;
          }
          if(op != null) {
-            compVal = next;
+            if(next.indexOf("\"") == 0 && next.lastIndexOf("\"") == next.length()-1){
+               compVal = next.substring(1, next.length()-1);
+            } else compVal = next;
             contextVal = evaluateLogicStatement(contextVal, op, compVal);
             op = null;
             compVal = null;
@@ -121,6 +157,7 @@ public class TGScriptParser {
    }
 
    private static String evaluateLogicStatement(Object field, String operator, Object value) {
+      //System.out.println("els: "+field+", "+operator+", "+value);
       switch(operator){
          case "==":
             return (new Boolean(field.equals(value))).toString();
@@ -166,22 +203,41 @@ public class TGScriptParser {
    private static void parseBody(InputStream in) throws IOException {
       int c;
       String cmd = null;
-      String[] tokens = {"print"};
       String buffer = new String();
+      boolean inQuote = false;
       while(in.available() > 0){
          c = in.read();
-         if(c != '\n' && c != ' ' && c != ';') buffer += (char)c;
+         if(c == '"') {
+            if(inQuote) inQuote = false;
+            else inQuote = true;
+         }
+         if(c != '\n' && c != ' ' && c != ';' || inQuote) buffer += (char)c;
          else if(c == ';') {
             if(cmd != null){
-               String token = buffer.trim();
-               System.out.println(context.get(token).get("value"));
+               String[] args = {buffer.trim()};
+               runCmd(cmd, args);
+               cmd = null;
+               buffer = null;
             }
          }
-         if(buffer.equals("print")){
-           cmd = "print";
+         if(commands.containsKey(buffer)){
+           cmd = buffer;
            buffer = "";
          }       
       }
 
+   }
+
+   private static void runCmd(String cmd, String[] args) {
+      switch(cmd){
+         case "print":
+            String s = args[0];
+            if(s.indexOf("\"") == 0 && s.lastIndexOf("\"") == s.length()-1){
+               System.out.println(s.substring(1, s.length()-1));
+            } else if(context.containsKey(s)) {
+               System.out.println(context.get(s).get("value"));
+            }
+            return;
+      }
    }
 }
