@@ -49,9 +49,9 @@ public class TGScriptParser {
    }
 
    private void processToken(InputStream in, String token) throws IOException {
-      System.out.println("found token: "+token);
+      //System.out.println("found token: "+token);
       if(tokens.get(token).equals("branch")){
-         System.out.println("parsing for branch");
+         //System.out.println("parsing for branch");
          int c = 0;
          String buffer = "";
          while(in.available() > 0){
@@ -62,17 +62,18 @@ public class TGScriptParser {
             } else throw new IOException("'(' Expected");
          }
          if(processCondition(in)){
-            System.out.println("Following true path");
+            //System.out.println("Following true path");
             String body = getBody(in);
-            System.out.println(body);
+            //System.out.println(body);
             processBody(new ByteArrayInputStream(body.getBytes()));
             //Find and reject else
             while(in.available() > 0 && buffer.length() < 5){
                c = in.read();
                if(c != '\n' && c != ' ') buffer += (char)c;
                if(buffer.length() == 4 && buffer.equals("else")){
-                  System.out.println("Rejected: ");
-                  System.out.println(getBody(in));
+                  //System.out.println("Rejected: ");
+                  //System.out.println(getBody(in));
+                  getBody(in);
                   buffer = "";
                } else if(tokens.containsKey(buffer.trim().toLowerCase())){
                   processToken(in, buffer.trim().toLowerCase());
@@ -81,19 +82,19 @@ public class TGScriptParser {
             }
             return;
          } else {
-            System.out.println("Following false path");
+            //System.out.println("Following false path");
             //Reject next command/block
             //If followed by else processBody it.
-            System.out.println("Rejected: ");
+            //System.out.println("Rejected: ");
             System.out.println(getBody(in));
             buffer = "";
             while(in.available() > 0 && buffer.length() < 5){
                c = in.read();
                if(c != '\n' && c != ' ') buffer += (char)c;
                if(buffer.length() == 4 && buffer.equals("else")){
-                  System.out.println("else body:");
+                  //System.out.println("else body:");
                   String body = getBody(in);
-                  System.out.println(body);
+                  //System.out.println(body);
                   processBody(new ByteArrayInputStream(body.getBytes()));
                   buffer = "";
                } else if(tokens.containsKey(buffer.trim().toLowerCase())){
@@ -104,19 +105,21 @@ public class TGScriptParser {
          }
          return;
       } else if(tokens.get(token).equals("loop")){
-         System.out.println("Found loop");
+         //System.out.println("Found loop");
          String condition = "("+getCondition(in)+")";
-         System.out.println("Condition: "+condition);
+         //System.out.println("Condition: "+condition);
          String body = getBody(in);
-         System.out.println("Body: "+body);
+         //System.out.println("Body: "+body);
          while(processCondition(new ByteArrayInputStream(condition.getBytes()))) {
-            System.out.println("while condition is true");
+            //System.out.println("while condition is true");
+            //System.out.println(context);
             processBody(new ByteArrayInputStream(body.getBytes()));
+            //System.out.println(context);
          }
-         System.out.println("loop exited");
+         //System.out.println("loop exited");
          return;
       } else if(tokens.get(token).equals("variable")){
-         System.out.println("parsing for variable");
+         //System.out.println("parsing for variable");
          processVarDeclaration(token, in);
          return;
       }
@@ -256,68 +259,56 @@ public class TGScriptParser {
    private void processBody(InputStream in) throws IOException {
       //Assume that the input has been normalized to just the content.
       int c = 0;
-      String cmd = null;
-      String assignmentVar = null;
+      String cmd = "";
+      String assignmentVar = "";
       int assignmentOp = 0;
       String buffer = new String();
       c = in.read();
       while(in.available() > 0){
          while(in.available() > 0 && (c == '\n' || c == '\r' || c == ' ')) c = in.read();
-         if(c == '"') {
-            c = in.read();
-            while(c != '"') {
-               if(c == 0) throw new IOException("'\"' expected");
-               buffer += (char)c;
-               c = in.read();
-            }
-            if(cmd != null){
-               String[] args = {"\""+buffer.trim()+"\""};
-               runCmd(cmd, args);
-               cmd = null;
-               buffer = null;
-            } else if(assignmentVar != null && assignmentOp == '=' && !buffer.equals("")) {
-               System.out.println("found assignment value");
-               context.get(assignmentVar).put("value", buffer);
-               System.out.println(assignmentVar+": New val: "+buffer);
-               buffer = "";
-               assignmentVar = "";
-               assignmentOp = 0;
-            }
-            c = in.read();
-            continue;
-         }
          if(c != ';') {
             buffer += (char)c;
-            if(cmd == null && assignmentVar == null) {
+            //System.out.println(buffer+" "+cmd+" "+assignmentVar);
+            if(cmd.equals("") && assignmentVar.equals("")) {
                if(commands.containsKey(buffer)){
                  cmd = buffer;
                  buffer = "";
+                 while(in.available() > 0){
+                    c = in.read();
+                    if(c == ';'){
+                       String[] args = {buffer.trim()};
+                       runCmd(cmd, args);
+                       cmd = "";
+                       buffer = "";
+                       break;
+                    } else buffer += (char)c;
+                 }
                } else if(context.containsKey(buffer)){
                   assignmentVar = buffer;
                   buffer = "";
+                  while(in.available() > 0){
+                     c = in.read();
+                     if(c == '=') {
+                        assignmentOp = c;
+                        buffer = "";
+                     } else if(c == ';'){
+                        if(context.get(assignmentVar).get("type").equals("string")) {
+                           int start = buffer.indexOf("\"")+1;
+                           int end = buffer.lastIndexOf("\"");
+                           context.get(assignmentVar).put("value", buffer.substring(start, end));
+                        } else context.get(assignmentVar).put("value", buffer);
+                        buffer = "";
+                        assignmentVar = "";
+                        assignmentOp = 0;
+                        break;
+                     } else buffer += (char)c;
+                  }
                }
-               c = in.read();
-               continue;
             }
-            if(assignmentVar != null && c == '=') assignmentOp = c;
             c = in.read();
+            continue;
          } 
-         if(c == ';') {
-            if(cmd != null){
-               String[] args = {buffer.trim()};
-               runCmd(cmd, args);
-               cmd = null;
-               buffer = null;
-            } else if(assignmentVar != null && assignmentOp == '=' && !buffer.equals("")) {
-               if(assignmentVar != null && assignmentOp == '=' && !buffer.trim().equals("")) {
-                  context.get(assignmentVar).put("value", buffer);
-               }
-               context.get(assignmentVar).put("value", context.get(buffer.trim().toLowerCase()).get("value"));
-               buffer = "";
-               assignmentVar = "";
-               assignmentOp = 0;
-            }
-         } else if(c == '{') {
+         if(c == '{') {
             if(cmd != null) throw new IOException("';' expected");
             c = 0;
             int stack = 1;

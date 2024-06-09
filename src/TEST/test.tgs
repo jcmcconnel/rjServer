@@ -4,6 +4,7 @@ if(r == "test") print r;
 else print s;
 
 while(r == "test") {
-   r = "new value";
+   r = "not test";
    print r;
+   print "in loop";
 }
