@@ -5,106 +5,159 @@ import java.util.*;
 public class TGScriptParser {
 
    private static HashMap<String, String> tokens = new HashMap<String, String>();
-   private static HashMap<String, HashMap<String, Object>> context = new HashMap<String, HashMap<String, Object>>();
+   private HashMap<String, HashMap<String, Object>> context = new HashMap<String, HashMap<String, Object>>();
 
    private static HashMap<String, String> commands = new HashMap<String, String>();
 
+   public TGScriptParser(File inFile){
+      try{
+        tokens.put("string", "variable");
+        tokens.put("if", "branch");
+        tokens.put("while", "loop");
+
+        commands.put("print", "");
+        process(new FileInputStream(inFile));
+      } 
+      catch(IOException e){
+         System.out.println(e);
+      } 
+   }
+
    public static void main(String args[]) {
+      TGScriptParser p;
       if(args.length == 0) {
          System.out.println("Usage: [OPTIONS] [FILE]");
       } else if(args.length == 1) {
          File inFile = new File(args[0]);
          if(inFile.exists()) {
-            try{
-              tokens.put("string", "variable");
-              tokens.put("if", "branch");
-
-              commands.put("print", "");
-              parse(new FileInputStream(inFile));
-            } 
-            catch(IOException e){
-               System.out.println(e);
-            } 
+            p = new TGScriptParser(inFile);
          } else return;
       }
    }
 
-   private static void parse(InputStream in) throws IOException {
+   private void process(InputStream in) throws IOException {
       int c;
       String buffer = new String();
       while(in.available() > 0){
          c = in.read();
          if(c != '\n' && c != ' ') buffer += (char)c;
          if(tokens.containsKey(buffer.trim().toLowerCase())) {
-            //System.out.println("found token: "+buffer);
-            if(tokens.get(buffer.trim().toLowerCase()).equals("branch")){
-               //System.out.println("parsing for branch");
-               while(in.available() > 0){
-                  c = in.read();
-                  if(c == '\n' || c == ' ') continue; 
-                  if(c == '(') {
-                     break;
-                  } else throw new IOException("'(' Expected");
-               }
-
-               if(parseCondition(in)){
-                  parseBody(in);
-               } else {
-                  //System.out.println("Looking for else");
-                  //Reject next command/block
-                  //If followed by else parseBody it.
-                  while(in.available() > 0){
-                     c = in.read();
-                     if(c == '{') {
-                        int bracketStack = 1;
-                        while(in.available() > 0){
-                           c = in.read();
-                           if(c == '{') bracketStack++;
-                           else if(c == '}') bracketStack--;
-                           if(bracketStack == 0) break;
-                        }
-                     } else if(c == ';') break;
-                  }
-                  buffer = "";
-                  while(in.available() > 0 && buffer.length() < 5){
-                     c = in.read();
-                     if(c != '\n' && c != ' ') buffer += (char)c;
-                     if(buffer.length() == 4 && buffer.equals("else")){
-                        parseBody(in);
-                        buffer = "";
-                     }
-                  }
-
-               }
-               //Parse body
-               //Parse for else
-               buffer = "";
-            } else if(tokens.get(buffer.trim().toLowerCase()).equals("variable")){
-               //System.out.println("parsing for variable");
-               parseVarDeclaration(buffer.trim().toLowerCase(), in);
-               buffer = "";
-            }
-         }
+            processToken(in, buffer.trim().toLowerCase());
+            buffer = "";
+         } //else System.out.println(buffer);
       }
    }
 
-   private static boolean parseCondition(InputStream in) throws IOException {
+   private void processToken(InputStream in, String token) throws IOException {
+      System.out.println("found token: "+token);
+      if(tokens.get(token).equals("branch")){
+         System.out.println("parsing for branch");
+         int c = 0;
+         String buffer = "";
+         while(in.available() > 0){
+            c = in.read();
+            if(c == '\n' || c == ' ') continue; 
+            if(c == '(') {
+               break;
+            } else throw new IOException("'(' Expected");
+         }
+         if(processCondition(in)){
+            System.out.println("Following true path");
+            String body = getBody(in);
+            System.out.println(body);
+            processBody(new ByteArrayInputStream(body.getBytes()));
+            //Find and reject else
+            while(in.available() > 0 && buffer.length() < 5){
+               c = in.read();
+               if(c != '\n' && c != ' ') buffer += (char)c;
+               if(buffer.length() == 4 && buffer.equals("else")){
+                  System.out.println("Rejected: ");
+                  System.out.println(getBody(in));
+                  buffer = "";
+               } else if(tokens.containsKey(buffer.trim().toLowerCase())){
+                  processToken(in, buffer.trim().toLowerCase());
+                  break;
+               }
+            }
+            return;
+         } else {
+            System.out.println("Following false path");
+            //Reject next command/block
+            //If followed by else processBody it.
+            System.out.println("Rejected: ");
+            System.out.println(getBody(in));
+            buffer = "";
+            while(in.available() > 0 && buffer.length() < 5){
+               c = in.read();
+               if(c != '\n' && c != ' ') buffer += (char)c;
+               if(buffer.length() == 4 && buffer.equals("else")){
+                  System.out.println("else body:");
+                  String body = getBody(in);
+                  System.out.println(body);
+                  processBody(new ByteArrayInputStream(body.getBytes()));
+                  buffer = "";
+               } else if(tokens.containsKey(buffer.trim().toLowerCase())){
+                  processToken(in, buffer.trim().toLowerCase());
+                  break;
+               }
+            }
+         }
+         return;
+      } else if(tokens.get(token).equals("loop")){
+         System.out.println("Found loop");
+         String condition = "("+getCondition(in)+")";
+         System.out.println("Condition: "+condition);
+         String body = getBody(in);
+         System.out.println("Body: "+body);
+         while(processCondition(new ByteArrayInputStream(condition.getBytes()))) {
+            System.out.println("while condition is true");
+            processBody(new ByteArrayInputStream(body.getBytes()));
+         }
+         System.out.println("loop exited");
+         return;
+      } else if(tokens.get(token).equals("variable")){
+         System.out.println("parsing for variable");
+         processVarDeclaration(token, in);
+         return;
+      }
+      return;
+   }
+
+   private boolean processCondition(InputStream in) throws IOException {
       int c;
       String content = "";
       while(in.available() > 0){
          c = in.read();
          if(c == '(') {
-            if(parseCondition(in)) content += "true";
+            if(processCondition(in)) content += "true";
             else content += "false";
+            if(in.available() == 0) return processLogicStatement(new Scanner(content));
          } else if(c == ')'){
-            return parseLogicStatement(new Scanner(content));
+            return processLogicStatement(new Scanner(content));
          } else content += (char)c;
-
       }
       return false;
    }
 
-   private static boolean parseLogicStatement(Scanner in) throws IOException {
+   private String getCondition(InputStream in) throws IOException {
+      int c;
+      int stack = 0;
+      String content = "";
+      while(in.available() > 0){
+         c = in.read();
+         if(c == '(') {
+            if(stack > 0) content += (char)c;
+            stack++;
+         } else if(c == ')'){
+            stack--;
+            if(stack == 0) return content;
+            content += (char)c;
+         } else content += (char)c;
+      }
+      return content;
+   }
+
+   private boolean processLogicStatement(Scanner in) throws IOException {
       Object contextVal = null;
       String op = null;
       Object compVal = null;
@@ -116,10 +169,10 @@ public class TGScriptParser {
          if(contextVal != null) { 
             if(next.equals("||")) {
                if(contextVal.equals("true")) return true;
-               else return parseLogicStatement(in);
+               else return processLogicStatement(in);
             }
             if(next.equals("&&")) {
-               if(contextVal.equals("true")) return parseLogicStatement(in);
+               if(contextVal.equals("true")) return processLogicStatement(in);
                else return false;
             }
          }
@@ -156,7 +209,7 @@ public class TGScriptParser {
       else return false;
    }
 
-   private static String evaluateLogicStatement(Object field, String operator, Object value) {
+   private String evaluateLogicStatement(Object field, String operator, Object value) {
       //System.out.println("els: "+field+", "+operator+", "+value);
       switch(operator){
          case "==":
@@ -177,7 +230,7 @@ public class TGScriptParser {
       //}
    }
 
-   private static void parseVarDeclaration(String dataType, InputStream in) throws IOException {
+   private void processVarDeclaration(String dataType, InputStream in) throws IOException {
       int c;
       String varName = "";
       HashMap<String, Object> varDef = new HashMap<String, Object>();
@@ -200,35 +253,127 @@ public class TGScriptParser {
       }
    }
 
-   private static void parseBody(InputStream in) throws IOException {
-      int c;
+   private void processBody(InputStream in) throws IOException {
+      //Assume that the input has been normalized to just the content.
+      int c = 0;
       String cmd = null;
+      String assignmentVar = null;
+      int assignmentOp = 0;
       String buffer = new String();
-      boolean inQuote = false;
+      c = in.read();
       while(in.available() > 0){
-         c = in.read();
+         while(in.available() > 0 && (c == '\n' || c == '\r' || c == ' ')) c = in.read();
          if(c == '"') {
-            if(inQuote) inQuote = false;
-            else inQuote = true;
+            c = in.read();
+            while(c != '"') {
+               if(c == 0) throw new IOException("'\"' expected");
+               buffer += (char)c;
+               c = in.read();
+            }
+            if(cmd != null){
+               String[] args = {"\""+buffer.trim()+"\""};
+               runCmd(cmd, args);
+               cmd = null;
+               buffer = null;
+            } else if(assignmentVar != null && assignmentOp == '=' && !buffer.equals("")) {
+               System.out.println("found assignment value");
+               context.get(assignmentVar).put("value", buffer);
+               System.out.println(assignmentVar+": New val: "+buffer);
+               buffer = "";
+               assignmentVar = "";
+               assignmentOp = 0;
+            }
+            c = in.read();
+            continue;
          }
-         if(c != '\n' && c != ' ' && c != ';' || inQuote) buffer += (char)c;
-         else if(c == ';') {
+         if(c != ';') {
+            buffer += (char)c;
+            if(cmd == null && assignmentVar == null) {
+               if(commands.containsKey(buffer)){
+                 cmd = buffer;
+                 buffer = "";
+               } else if(context.containsKey(buffer)){
+                  assignmentVar = buffer;
+                  buffer = "";
+               }
+               c = in.read();
+               continue;
+            }
+            if(assignmentVar != null && c == '=') assignmentOp = c;
+            c = in.read();
+         } 
+         if(c == ';') {
             if(cmd != null){
                String[] args = {buffer.trim()};
                runCmd(cmd, args);
                cmd = null;
                buffer = null;
+            } else if(assignmentVar != null && assignmentOp == '=' && !buffer.equals("")) {
+               if(assignmentVar != null && assignmentOp == '=' && !buffer.trim().equals("")) {
+                  context.get(assignmentVar).put("value", buffer);
+               }
+               context.get(assignmentVar).put("value", context.get(buffer.trim().toLowerCase()).get("value"));
+               buffer = "";
+               assignmentVar = "";
+               assignmentOp = 0;
             }
-         }
-         if(commands.containsKey(buffer)){
-           cmd = buffer;
-           buffer = "";
-         }       
+         } else if(c == '{') {
+            if(cmd != null) throw new IOException("';' expected");
+            c = 0;
+            int stack = 1;
+            buffer = "";
+            while(in.available() > 0 && (c == '\n' || c == ' ')) {
+               c = in.read();
+               buffer += (char)c;
+            }
+            while(in.available() > 0){
+               c = in.read();
+               if(c == ';' && stack == 0) {
+                  buffer += (char)c;
+                  break;
+               } else if(c == '{') {
+                  if(stack > 0) buffer += (char)c;
+                  stack ++;
+               } else if(c == '}') {
+                  stack --;
+                  if(stack == 0) break;
+                  buffer += (char)c;
+               } else buffer += (char)c;
+            }
+            processBody(new ByteArrayInputStream(buffer.getBytes()));
+            buffer = "";
+         } 
+         if(in.available() > 0) c = in.read();
       }
 
    }
 
-   private static void runCmd(String cmd, String[] args) {
+   private String getBody(InputStream in) throws IOException {
+      int c = 0;
+      int stack = 0;
+      String buffer = new String();
+      while(in.available() > 0 && (c == '\n' || c == ' ')) {
+         c = in.read();
+         buffer += (char)c;
+      }
+      while(in.available() > 0){
+         c = in.read();
+         if(c == ';' && stack == 0) {
+            buffer += (char)c;
+            return buffer;
+         } else if(c == '{') {
+            if(stack > 0) buffer += (char)c;
+            stack ++;
+         } else if(c == '}') {
+            stack --;
+            if(stack == 0) return buffer;
+            buffer += (char)c;
+         } else buffer += (char)c;
+      }
+      throw new IOException("'}' or ';' expected");
+   }
+
+   private void runCmd(String cmd, String[] args) {
       switch(cmd){
          case "print":
             String s = args[0];

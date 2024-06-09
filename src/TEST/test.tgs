@@ -1,4 +1,9 @@
 String s = "hello world";
 String r = "test";
-if(r == "not test") print r;
+if(r == "test") print r;
 else print s;
+
+while(r == "test") {
+   r = "new value";
+   print r;
+}
